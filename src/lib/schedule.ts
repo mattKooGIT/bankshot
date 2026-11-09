@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
-import { addDays } from "@/lib/dates";
+import { addDays, easternToday } from "@/lib/dates";
 import { fantasyPoints } from "@/lib/live";
 
 export type ScheduledGame = { id: string; date: string; startTime: string; status: string; home: string; away: string };
@@ -21,12 +21,17 @@ const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "
 const monthDay = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const tip = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 
+/** "Wed Nov 11" for a YYYY-MM-DD calendar date. */
+export function dateLabel(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  return `${weekday.format(d)} ${monthDay.format(d)}`;
+}
+
 /** "Tonight", "Tomorrow", or "Wed Nov 11". `today` is the US-Eastern date. */
 export function dayLabel(date: string, today: string): string {
   if (date === today) return "Tonight";
   if (date === addDays(today, 1)) return "Tomorrow";
-  const d = new Date(`${date}T12:00:00Z`);
-  return `${weekday.format(d)} ${monthDay.format(d)}`;
+  return dateLabel(date);
 }
 
 /** "7:30 PM ET" */
@@ -108,4 +113,20 @@ export async function getGameLog(espnId: string, limit = 10): Promise<LoggedGame
       fp: fantasyPoints(r),
     };
   });
+}
+
+/**
+ * Everything the player page's Schedule section needs. Computes "today" (ET) inside the
+ * cache so prerendered player pages can use it; refreshed with the market.
+ */
+export async function getPlayerSchedule(team: string | null, espnId: string | null) {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("market");
+  const today = easternToday();
+  const [upcoming, log] = await Promise.all([
+    team ? getTeamSchedule(team, today, 10) : Promise.resolve([]),
+    espnId ? getGameLog(espnId, 10) : Promise.resolve([]),
+  ]);
+  return { today, upcoming, log };
 }

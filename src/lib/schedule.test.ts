@@ -36,3 +36,9 @@ test("nextGame: earliest game that isn't final or postponed, else null", () => {
   assert.equal(nextGame(games, "LAL")?.id, "next");
   assert.equal(nextGame([games[0]], "LAL"), null);
 });
+
+import { dateLabel } from "./schedule";
+
+test("dateLabel: plain weekday and date for past games", () => {
+  assert.equal(dateLabel("2026-11-08"), "Sun Nov 8");
+});

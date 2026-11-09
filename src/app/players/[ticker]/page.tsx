@@ -10,6 +10,7 @@ import { formatMoney, formatPct } from "@/lib/format";
 import { PriceChart } from "@/components/PriceChart";
 import { TradePanel } from "./TradePanel";
 import { LiveLine } from "./LiveLine";
+import { Schedule } from "./Schedule";
 
 export async function generateStaticParams() {
   return (await getMarket()).map((p) => ({ ticker: p.ticker }));
@@ -88,6 +89,8 @@ export default async function PlayerPage({ params }: PageProps<"/players/[ticker
               {player.last5.length > 0 && ` Last ${player.last5.length}: ${player.last5.map((f) => f.toFixed(1)).join(", ")}.`}
             </p>
           </div>
+
+          <Schedule team={player.team} espnId={player.espn_id} expectedFp={player.expected_fp} />
         </section>
 
         <aside className="h-fit rounded-xl border border-white/10 bg-white/[0.02] p-5 lg:sticky lg:top-6">
