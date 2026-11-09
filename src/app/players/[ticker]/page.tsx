@@ -9,6 +9,7 @@ import {
 import { formatMoney, formatPct } from "@/lib/format";
 import { PriceChart } from "@/components/PriceChart";
 import { TradePanel } from "./TradePanel";
+import { LiveLine } from "./LiveLine";
 
 export async function generateStaticParams() {
   return (await getMarket()).map((p) => ({ ticker: p.ticker }));
@@ -59,6 +60,8 @@ export default async function PlayerPage({ params }: PageProps<"/players/[ticker
               </div>
             </div>
           </header>
+
+          <LiveLine espnId={player.espn_id} team={player.team} expectedFp={player.expected_fp} />
 
           <InjuryReport note={player.injury_note} espnId={player.espn_id} night={latest} />
 
