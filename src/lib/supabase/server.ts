@@ -25,7 +25,13 @@ export async function createClient() {
   );
 }
 
-/** Only allow same-site relative paths as post-login destinations (prevents open redirects). */
+/**
+ * Only allow same-site relative paths as post-login destinations (prevents open redirects).
+ * Rejects backslashes and control characters anywhere: browsers strip tabs/newlines, so
+ * "/\t/evil.com" would otherwise become the protocol-relative "//evil.com".
+ */
 export function safeNext(next: string | null | undefined, fallback = "/") {
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : fallback;
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
+  if (/[\u0000-\u001f\u007f\\]/.test(next)) return fallback;
+  return next;
 }

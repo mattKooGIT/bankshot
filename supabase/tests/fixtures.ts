@@ -1,5 +1,5 @@
 // Shared scenarios for the rooms tests.
-import { actAs, addRealPlayers, applyMigration, freshDb, signUp, type Db } from "./harness";
+import { actAs, addRealPlayers, applyMigration, freshDb, migrationFiles, signUp, type Db } from "./harness";
 
 export const A = "00000000-0000-0000-0000-00000000000a";
 export const B = "00000000-0000-0000-0000-00000000000b";
@@ -9,7 +9,7 @@ const ROSTER = [
   { espn_id: "2", name: "Nikola Jokic", team: "DEN", pos: "C" as const },
 ];
 
-/** Pre-rooms world (0001–0005) where A owns 3 SGA and B exists, then migrations from 0006 on. */
+/** Pre-rooms world (0001–0005) where A owns 3 SGA and B exists, then every migration from 0006 on. */
 export async function migrated(): Promise<{ db: Db; cashBefore: number }> {
   const db = await freshDb({ through: "0005" });
   await addRealPlayers(db, ROSTER);
@@ -19,7 +19,7 @@ export async function migrated(): Promise<{ db: Db; cashBefore: number }> {
   await db.q(`select execute_trade('SGA', 'buy', 3)`);
   const [{ cash }] = await db.q(`select cash from profiles where id = $1`, [A]);
   await actAs(db, null);
-  await applyMigration(db, "0006");
+  for (const f of migrationFiles().filter((f) => f >= "0006")) await applyMigration(db, f.slice(0, 4));
   return { db, cashBefore: Number(cash) };
 }
 

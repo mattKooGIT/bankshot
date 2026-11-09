@@ -6,18 +6,19 @@ import { EmailForm, UsernameForm } from "./SettingsForms";
 
 export const metadata: Metadata = { title: "Settings · Courtside Exchange" };
 
-export default function SettingsPage() {
+export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (
     <main className="mx-auto max-w-xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">Settings</h1>
       <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-white/5" />}>
-        <Settings />
+        <Settings searchParams={searchParams} />
       </Suspense>
     </main>
   );
 }
 
-async function Settings() {
+async function Settings({ searchParams }: Pick<PageProps<"/settings">, "searchParams">) {
+  const { notice } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -38,6 +39,9 @@ async function Settings() {
 
   return (
     <div className="space-y-6">
+      {typeof notice === "string" && (
+        <p role="status" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">{notice}</p>
+      )}
       <section className={section}><UsernameForm current={profile?.username ?? ""} /></section>
       <section className={section}><EmailForm current={user.email ?? ""} /></section>
       <section className={section}>
