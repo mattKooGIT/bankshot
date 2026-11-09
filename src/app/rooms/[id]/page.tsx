@@ -9,6 +9,8 @@ import { getCurrentRoom, getMyRooms, isRoomEnded } from "@/lib/rooms";
 import { switchRoom } from "../actions";
 import { InviteLink, RemoveMemberButton } from "./OwnerControls";
 import { DangerZone } from "./DangerZone";
+import { Activity } from "./Activity";
+import type { FeedEvent } from "@/lib/feed";
 
 export const metadata: Metadata = { title: "Room · Courtside Exchange" };
 
@@ -37,11 +39,13 @@ async function RoomView({ params }: Pick<PageProps<"/rooms/[id]">, "params">) {
 
   const supabase = await createClient();
   const isOwner = room.owner_id === current.userId;
-  const [{ data: board }, { data: roster }, invite] = await Promise.all([
+  const [{ data: board }, { data: roster }, invite, { data: feed }] = await Promise.all([
     supabase.rpc("leaderboard", { p_room: id, p_limit: 200 }),
     supabase.rpc("room_roster", { p_room: id }),
     isOwner ? supabase.rpc("room_invite", { p_room: id }) : Promise.resolve({ data: null }),
+    supabase.rpc("room_feed", { p_room: id, p_before: null, p_limit: 30 }),
   ]);
+  const initialFeed = ((feed ?? []) as FeedEvent[]).map((e) => ({ ...e, id: String(e.id) }));
   const rows = (board ?? []) as Row[];
   const members = (roster ?? []) as Member[];
   const final = room.finalized_at !== null;
@@ -94,6 +98,9 @@ async function RoomView({ params }: Pick<PageProps<"/rooms/[id]">, "params">) {
           })}
         </ol>
       </section>
+
+      <Activity roomId={id} initial={initialFeed}
+        me={members.find((m) => m.user_id === current.userId)?.username ?? ""} />
 
       <section>
         <h2 className="mb-3 text-sm font-medium text-white/60">Members</h2>
