@@ -31,7 +31,7 @@ export function ScoresView({ initial, holdings, roomName, tickerByEspnId }: {
         {data.games.length === 0 ? (
           <p className="rounded-xl border border-white/10 p-8 text-center text-sm text-white/60">No games today.</p>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid items-start gap-3 md:grid-cols-2">
             {data.games.map((g) => (
               <GameCard key={g.id} game={g} lines={data.lines.filter((l) => l.gameId === g.id)} tickerByEspnId={tickerByEspnId} />
             ))}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getMarket } from "@/lib/market";
 import { getCurrentRoom } from "@/lib/rooms";
@@ -20,6 +21,8 @@ export default function ScoresPage() {
 }
 
 async function Scores() {
+  // Live data must never be prerendered: it changes between build phases during games.
+  await connection();
   const [initial, market, current] = await Promise.all([getLiveData(), getMarket(), getCurrentRoom()]);
   const tickerByEspnId = Object.fromEntries(market.filter((p) => p.espn_id).map((p) => [p.espn_id!, p.ticker]));
 
