@@ -8,7 +8,7 @@ export function TradeForm({ ticker, price, cash, owned, injured }: {
   ticker: string; price: number; cash: number; owned: number; injured: boolean;
 }) {
   const [state, action, pending] = useActionState<TradeState, FormData>(trade, {});
-  const [side, setSide] = useState<"buy" | "sell">(injured && owned > 0 ? "sell" : "buy");
+  const [side, setSide] = useState<"buy" | "sell">("buy");
   const [shares, setShares] = useState("1");
 
   const n = Number(shares);
@@ -16,7 +16,7 @@ export function TradeForm({ ticker, price, cash, owned, injured }: {
   const maxBuy = Math.floor(cash / price);
   const max = side === "buy" ? maxBuy : owned;
   const total = valid ? n * price : 0;
-  const blocked = side === "buy" ? injured || n > maxBuy : n > owned;
+  const blocked = side === "buy" ? n > maxBuy : n > owned;
 
   return (
     <form action={action} className="space-y-4">
@@ -51,7 +51,11 @@ export function TradeForm({ ticker, price, cash, owned, injured }: {
         <div className="flex justify-between"><dt className="text-white/60">You own</dt><dd className="font-mono">{owned}</dd></div>
       </dl>
 
-      {side === "buy" && injured && <p className="text-sm text-red-300">Buying is paused while he&apos;s out. You can still sell.</p>}
+      {side === "buy" && injured && (
+        <p className="rounded-md border border-red-500/20 bg-red-500/5 p-2 text-xs text-red-200">
+          Listed out. His price drops each night he misses, so you&apos;re betting on his return.
+        </p>
+      )}
 
       <button disabled={pending || !valid || blocked}
         className={`w-full rounded-lg px-4 py-2.5 font-medium text-black disabled:opacity-40 ${side === "buy" ? "bg-emerald-500 hover:bg-emerald-400" : "bg-red-500 hover:bg-red-400"}`}>
