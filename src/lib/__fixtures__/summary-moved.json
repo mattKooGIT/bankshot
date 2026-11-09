@@ -1,0 +1,32 @@
+{
+ "header": {
+  "id": "401909999",
+  "competitions": [
+   {
+    "date": "2026-11-24T00:30Z",
+    "status": {
+     "type": {
+      "name": "STATUS_SCHEDULED"
+     }
+    },
+    "competitors": [
+     {
+      "homeAway": "home",
+      "team": {
+       "abbreviation": "OKC"
+      }
+     },
+     {
+      "homeAway": "away",
+      "team": {
+       "abbreviation": "DEN"
+      }
+     }
+    ]
+   }
+  ],
+  "season": {
+   "type": 2
+  }
+ }
+}

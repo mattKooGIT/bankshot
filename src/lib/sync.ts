@@ -2,7 +2,8 @@
 // Relative imports only, so it also runs outside Next.js.
 import { createAdminClient } from "./supabase/admin";
 import { addDays, easternToday } from "./dates";
-import { fetchBoxScore, fetchGames, fetchInjuries, fetchTeams, fetchTeamSchedule, headshotUrl, type EspnGame } from "./espn";
+import { fetchBoxScore, fetchGameHeader, fetchGames, fetchInjuries, fetchTeams, fetchTeamSchedule, headshotUrl, type EspnGame } from "./espn";
+import { staleGameIds } from "./sync-guard";
 
 type Admin = ReturnType<typeof createAdminClient>;
 const SKIPPED = new Set(["STATUS_POSTPONED", "STATUS_CANCELED"]);
@@ -127,7 +128,9 @@ export async function syncNights(until = addDays(easternToday(), -1), log = cons
   try {
     log(`Synced ${await syncSchedule(db)} scheduled games.`);
   } catch (e) {
-    log(`Warning: schedule sync failed (${e instanceof Error ? e.message : e}); continuing with prices.`);
+    const msg = `Warning: schedule sync failed (${e instanceof Error ? e.message : e}); continuing with prices.`;
+    log(msg);
+    console.warn(msg); // the cron route passes a silent logger; this still reaches the server log
   }
 
   const results: NightResult[] = [];
@@ -143,8 +146,29 @@ export async function syncNights(until = addDays(easternToday(), -1), log = cons
       results.push({ date: d, result: "waiting", detail: "not every game is final" });
       break;
     }
+    // Our stored schedule may still have a game on this date that ESPN moved elsewhere.
+    // Re-resolve those from ESPN; if any still block the night, wait instead of erroring.
+    const stored = check(await db.from("games").select("espn_id, status").eq("game_date", d), `load games ${d}`) as
+      { espn_id: string; status: string }[];
+    const stale = staleGameIds(stored, games.map((g) => g.espn_id));
+    if (stale.length) {
+      const fixed = (await Promise.allSettled(stale.map(fetchGameHeader))).flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+      if (fixed.length) check(await db.from("games").upsert(fixed), `re-resolve moved games ${d}`);
+      const still = staleGameIds(fixed.filter((g) => g.game_date === d), games.map((g) => g.espn_id))
+        .concat(stale.filter((id) => !fixed.some((g) => g.espn_id === id)));
+      if (still.length) {
+        results.push({ date: d, result: "waiting", detail: `stored games not resolved: ${still.join(", ")}` });
+        break;
+      }
+    }
+
     const out = await refreshPlayerMeta(db);
-    const night = check(await db.rpc("apply_real_game_night", { p_date: d, p_out: out }), `apply ${d}`) as number;
+    const applied = await db.rpc("apply_real_game_night", { p_date: d, p_out: out });
+    if (applied.error?.message.includes("Not every game")) {
+      results.push({ date: d, result: "waiting", detail: applied.error.message });
+      break;
+    }
+    const night = check(applied, `apply ${d}`) as number;
     const listed = check(await db.rpc("list_rotation_players"), "list_rotation_players") as number;
     if (listed) await refreshPlayerMeta(db);
     log(`${d}: applied as night ${night}${listed ? `, listed ${listed} new players` : ""}`);

@@ -158,3 +158,25 @@ export function parseTeamSchedule(json: unknown): EspnGame[] {
 export async function fetchTeamSchedule(teamId: string): Promise<EspnGame[]> {
   return parseTeamSchedule(await getJson(`${BASE}/teams/${teamId}/schedule`));
 }
+
+/** One game's current date and status from /summary (used to re-resolve a moved game). */
+export function parseGameHeader(json: unknown): EspnGame {
+  type H = { header: { id: string; competitions: {
+    date: string; status: { type: { name: string } };
+    competitors: { homeAway: "home" | "away"; team: { abbreviation: string }; score?: string }[] }[] } };
+  const h = (json as H).header;
+  const c = h.competitions[0];
+  const home = c.competitors.find((t) => t.homeAway === "home")!;
+  const away = c.competitors.find((t) => t.homeAway === "away")!;
+  const final = c.status.type.name === "STATUS_FINAL";
+  return {
+    espn_id: h.id, game_date: easternDate.format(new Date(c.date)), start_time: c.date, status: c.status.type.name,
+    home_team: home.team.abbreviation, away_team: away.team.abbreviation,
+    home_score: final && home.score != null ? Number(home.score) : null,
+    away_score: final && away.score != null ? Number(away.score) : null,
+  };
+}
+
+export async function fetchGameHeader(espnId: string): Promise<EspnGame> {
+  return parseGameHeader(await getJson(`${BASE}/summary?event=${espnId}`));
+}
