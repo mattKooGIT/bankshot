@@ -1,14 +1,8 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient, safeNext } from "@/lib/supabase/server";
-
-async function callbackUrl(next: string) {
-  const h = await headers();
-  const origin = h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
-  return `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
-}
+import { authCallbackUrl as callbackUrl } from "@/lib/origin";
 
 export type LoginState = { error?: string; sent?: string };
 
