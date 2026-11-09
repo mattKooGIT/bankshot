@@ -4,15 +4,13 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, formatPct } from "@/lib/format";
 import { PriceChart } from "@/components/PriceChart";
+import { getCurrentRoom } from "@/lib/rooms";
 
 export const metadata: Metadata = { title: "Portfolio · Courtside Exchange" };
-
-const STARTING_CASH = 10_000;
 
 export default function PortfolioPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Portfolio</h1>
       <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-white/5" />}>
         <Portfolio />
       </Suspense>
@@ -28,13 +26,12 @@ type HoldingRow = {
 };
 
 async function Portfolio() {
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const userId = auth?.claims?.sub;
+  const current = await getCurrentRoom();
 
-  if (!userId) {
+  if (!current) {
     return (
       <div className="rounded-xl border border-white/10 p-8 text-center">
+        <h1 className="mb-2 text-2xl font-semibold">Portfolio</h1>
         <p className="text-white/60">Sign in to see your holdings and performance.</p>
         <Link href="/login?next=/portfolio" className="mt-4 inline-block rounded-lg bg-emerald-500 px-5 py-2.5 font-medium text-black">
           Sign in
@@ -43,13 +40,17 @@ async function Portfolio() {
     );
   }
 
-  // RLS restricts holdings, trades, and net worth history to this user's rows.
-  const [{ data: profile }, { data: holdingRows }, { data: trades }, { data: history }] = await Promise.all([
-    supabase.from("profiles").select("username, cash").eq("id", userId).single(),
-    supabase.from("holdings").select("ticker, shares, avg_cost, players(name, price, out_nights, last_move)").eq("user_id", userId),
-    supabase.from("trades").select("id, ticker, side, shares, price, night, created_at").eq("user_id", userId)
-      .order("created_at", { ascending: false }).limit(20),
-    supabase.from("net_worth_history").select("night, net_worth").eq("user_id", userId).order("night"),
+  const { userId, room, cash } = current;
+  const STARTING_CASH = room.starting_cash;
+  const supabase = await createClient();
+  // RLS restricts holdings, trades, and net worth history to this user's rows; filter to this room.
+  const [{ data: holdingRows }, { data: trades }, { data: history }] = await Promise.all([
+    supabase.from("holdings").select("ticker, shares, avg_cost, players(name, price, out_nights, last_move)")
+      .eq("user_id", userId).eq("room_id", room.id),
+    supabase.from("trades").select("id, ticker, side, shares, price, night, created_at")
+      .eq("user_id", userId).eq("room_id", room.id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("net_worth_history").select("night, net_worth")
+      .eq("user_id", userId).eq("room_id", room.id).order("night"),
   ]);
 
   const holdings = ((holdingRows ?? []) as unknown as HoldingRow[])
@@ -65,7 +66,6 @@ async function Portfolio() {
     })
     .sort((a, b) => b.value - a.value);
 
-  const cash = Number(profile?.cash ?? 0);
   const invested = holdings.reduce((s, h) => s + h.value, 0);
   const netWorth = cash + invested;
   const totalReturn = netWorth / STARTING_CASH - 1;
@@ -83,6 +83,7 @@ async function Portfolio() {
 
   return (
     <div className="space-y-10">
+      <h1 className="-mb-4 text-2xl font-semibold">Portfolio <span className="text-white/40">· {room.name}</span></h1>
       <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">

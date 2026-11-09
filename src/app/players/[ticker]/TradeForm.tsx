@@ -4,8 +4,8 @@ import { useActionState, useState } from "react";
 import { trade, type TradeState } from "./actions";
 import { formatMoney } from "@/lib/format";
 
-export function TradeForm({ ticker, price, cash, owned, injured }: {
-  ticker: string; price: number; cash: number; owned: number; injured: boolean;
+export function TradeForm({ roomId, roomName, ticker, price, cash, owned, injured }: {
+  roomId: string; roomName: string; ticker: string; price: number; cash: number; owned: number; injured: boolean;
 }) {
   const [state, action, pending] = useActionState<TradeState, FormData>(trade, {});
   const [side, setSide] = useState<"buy" | "sell">("buy");
@@ -20,8 +20,11 @@ export function TradeForm({ ticker, price, cash, owned, injured }: {
 
   return (
     <form action={action} className="space-y-4">
+      <input type="hidden" name="room" value={roomId} />
       <input type="hidden" name="ticker" value={ticker} />
       <input type="hidden" name="side" value={side} />
+
+      <p className="text-xs text-white/50">Trading in: <span className="text-white">{roomName}</span></p>
 
       <div className="grid grid-cols-2 rounded-lg border border-white/15 p-0.5 text-sm" role="group" aria-label="Order side">
         {(["buy", "sell"] as const).map((s) => (

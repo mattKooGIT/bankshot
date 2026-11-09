@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test rows are untyped SQL results by design */
 // PGlite (Postgres in WASM) with just enough of Supabase stubbed to run our migrations.
 import { PGlite } from "@electric-sql/pglite";
 import { readdirSync, readFileSync } from "node:fs";

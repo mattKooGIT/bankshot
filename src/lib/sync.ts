@@ -1,20 +1,11 @@
 // Real-data sync. Used by `npm run sync` (scripts/sync.ts) and the cron route.
 // Relative imports only, so it also runs outside Next.js.
 import { createAdminClient } from "./supabase/admin";
+import { addDays, easternToday } from "./dates";
 import { fetchBoxScore, fetchGames, fetchInjuries, headshotUrl, type EspnGame } from "./espn";
 
 type Admin = ReturnType<typeof createAdminClient>;
 const SKIPPED = new Set(["STATUS_POSTPONED", "STATUS_CANCELED"]);
-
-/** Today's date in US Eastern as YYYY-MM-DD. NBA "dates" are Eastern. */
-export function easternToday(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
-}
-export function addDays(date: string, n: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 async function inBatches<T, R>(items: T[], size: number, fn: (t: T) => Promise<R>): Promise<R[]> {
   const out: R[] = [];

@@ -7,6 +7,7 @@ export type TradeState = { ok?: boolean; message?: string };
 
 /** Calls the execute_trade Postgres function, which does every check and money move atomically. */
 export async function trade(_prev: TradeState, formData: FormData): Promise<TradeState> {
+  const room = String(formData.get("room") ?? "");
   const ticker = String(formData.get("ticker") ?? "");
   const side = String(formData.get("side") ?? "");
   const shares = Number(formData.get("shares"));
@@ -14,10 +15,10 @@ export async function trade(_prev: TradeState, formData: FormData): Promise<Trad
   if (side !== "buy" && side !== "sell") return { ok: false, message: "Choose buy or sell." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("execute_trade", { p_ticker: ticker, p_side: side, p_shares: shares });
+  const { data, error } = await supabase.rpc("execute_trade", { p_room: room, p_ticker: ticker, p_side: side, p_shares: shares });
   if (error) return { ok: false, message: error.message };
 
-  refresh(); // re-render header cash and this page's holdings
+  refresh(); // re-render header cash and this page's holdings in this room
   const r = data as { shares: number; price: number; total: number };
   return {
     ok: true,
