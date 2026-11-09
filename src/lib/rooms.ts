@@ -27,6 +27,13 @@ export function isRoomEnded(room: Pick<Room, "ends_at" | "finalized_at">, today 
 
 type Membership = { room: Room; cash: number };
 
+/** The cookie's room if you're a member of it; otherwise your Public membership. */
+export function pickCurrentRoom<M extends { room: { id: string; is_public: boolean } }>(
+  memberships: M[], wanted: string | undefined,
+): M | undefined {
+  return memberships.find((m) => m.room.id === wanted) ?? memberships.find((m) => m.room.is_public);
+}
+
 /** The signed-in user's memberships, once per request. Null when signed out. */
 const loadMemberships = cache(async (): Promise<{ userId: string; memberships: Membership[] } | null> => {
   const supabase = await createClient();
@@ -61,9 +68,7 @@ export async function getCurrentRoom(): Promise<{ userId: string; room: Room; ca
   const loaded = await loadMemberships();
   if (!loaded) return null;
   const wanted = (await cookies()).get(ROOM_COOKIE)?.value;
-  const pick =
-    loaded.memberships.find((m) => m.room.id === wanted) ??
-    loaded.memberships.find((m) => m.room.is_public);
+  const pick = pickCurrentRoom(loaded.memberships, wanted);
   if (!pick) throw new Error("You aren't in the Public room. Run migration 0006.");
   return { userId: loaded.userId, room: pick.room, cash: pick.cash };
 }
