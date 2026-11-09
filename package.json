@@ -12,7 +12,8 @@
     "test:unit": "tsx --test 'src/**/*.test.ts'",
     "test": "npm run test:db && npm run test:unit",
     "fake-espn": "node --env-file=.env.local scripts/fake-espn.mjs",
-    "preview:fake-live": "next build && LIVE_ESPN_BASE=http://127.0.0.1:8765 next start -p 3001"
+    "preview:fake-live": "next build && LIVE_ESPN_BASE=http://127.0.0.1:8765 next start -p 3001",
+    "record-demo": "tsx --env-file=.env.local scripts/record-demo.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
