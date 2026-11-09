@@ -17,7 +17,7 @@ const display = Big_Shoulders({ subsets: ["latin"], weight: ["800", "900"] });
 
 export const metadata: Metadata = {
   title: "Courtside Exchange: the stock market, but for the NBA",
-  description: "Buy and sell real NBA players with paper money. Prices move every night on real box scores. Beat your friends.",
+  description: "Buy and sell players with paper money. Prices move every night on real box scores. Beat your friends.",
 };
 
 const HAS_DEMO = existsSync(join(process.cwd(), "public", "demo.webm"));
@@ -47,7 +47,7 @@ export default async function Home() {
             The stock market,<br />but for the NBA.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-            Buy and sell real players with $10,000 in paper money. Prices move every night on real box scores. Beat your friends.
+            Buy and sell players with paper money. Prices move every night on real box scores. Beat your friends.
           </p>
           <Suspense fallback={<div className="mt-9 h-12" />}>
             <HeroActions />
