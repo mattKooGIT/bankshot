@@ -1,0 +1,31 @@
+-- Starting market: approximate season averages. Opening price = 1.2 x expected fantasy points.
+insert into public.players (ticker,name,position,avg_pts,avg_reb,avg_ast,avg_stl,avg_blk,avg_tov,price) values
+  ('SGA','Shai Gilgeous-Alexander','G',32.0,5.0,6.4,1.7,0.8,2.3,63.36),
+  ('JOKIC','Nikola Jokić','C',28.0,12.5,10.0,1.6,0.7,3.2,74.04),
+  ('GIA','Giannis Antetokounmpo','F',30.0,11.5,6.0,0.9,1.1,3.2,66.72),
+  ('LUKA','Luka Dončić','G',30.0,8.5,8.5,1.6,0.4,3.8,66.18),
+  ('WEMBY','Victor Wembanyama','C',25.0,11.5,3.5,1.1,3.6,3.0,66.18),
+  ('JT','Jayson Tatum','F',26.5,8.5,5.5,1.1,0.5,2.8,56.34),
+  ('ANT','Anthony Edwards','G',27.0,5.7,4.5,1.2,0.6,3.0,51.59),
+  ('JB','Jalen Brunson','G',26.0,3.0,7.3,0.9,0.2,2.6,49.50),
+  ('LBJ','LeBron James','F',23.0,7.5,8.0,1.0,0.5,3.5,54.00),
+  ('STEPH','Stephen Curry','G',25.0,4.5,6.0,1.1,0.4,3.0,49.08),
+  ('KD','Kevin Durant','F',26.0,6.0,4.2,0.8,1.2,3.0,51.00),
+  ('CADE','Cade Cunningham','G',25.0,6.0,9.5,1.0,0.7,4.0,57.06),
+  ('PAOLO','Paolo Banchero','F',25.0,7.5,4.8,0.7,0.6,3.0,50.52),
+  ('MITCH','Donovan Mitchell','G',26.0,4.5,5.0,1.3,0.3,2.5,49.44),
+  ('BOOK','Devin Booker','G',25.0,4.2,7.0,0.9,0.3,2.9,49.49),
+  ('FLAGG','Cooper Flagg','F',20.0,6.8,4.0,1.2,0.9,2.5,45.55),
+  ('EMBIID','Joel Embiid','C',24.0,8.0,4.0,0.7,1.0,3.5,49.44),
+  ('AD','Anthony Davis','C',24.0,11.0,3.4,1.2,2.0,2.1,59.76),
+  ('JA','Ja Morant','G',22.0,5.0,7.0,1.1,0.4,3.3,47.64),
+  ('FOX','De''Aaron Fox','G',22.0,4.5,6.0,1.5,0.4,2.6,47.40),
+  ('TRAE','Trae Young','G',24.0,3.5,10.5,1.2,0.2,4.4,52.50),
+  ('KAT','Karl-Anthony Towns','C',24.0,12.5,3.2,0.8,0.7,2.8,54.60),
+  ('KAWHI','Kawhi Leonard','F',25.0,6.0,3.5,1.6,0.6,1.9,50.58),
+  ('JDUB','Jalen Williams','F',21.0,5.0,5.0,1.4,0.6,2.4,45.72),
+  ('MELO','LaMelo Ball','G',21.0,5.0,7.0,1.1,0.3,3.2,46.20),
+  ('BAM','Bam Adebayo','C',18.0,10.0,4.0,1.1,0.9,2.5,47.40),
+  ('SABO','Domantas Sabonis','C',19.0,13.5,6.0,0.8,0.4,3.0,53.76);
+
+insert into public.price_history (ticker, night, price) select ticker, 0, price from public.players;
