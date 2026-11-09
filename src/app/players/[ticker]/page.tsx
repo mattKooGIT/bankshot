@@ -3,7 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getMarket, getPlayer, getPriceHistory, type LastMove } from "@/lib/market";
+import {
+  ESPN_INJURIES_URL, espnPlayerUrl, getLatestNight, getMarket, getPlayer, getPriceHistory, parseInjuryNote, type LastMove,
+} from "@/lib/market";
 import { formatMoney, formatPct } from "@/lib/format";
 import { PriceChart } from "@/components/PriceChart";
 import { TradePanel } from "./TradePanel";
@@ -19,7 +21,7 @@ export async function generateMetadata({ params }: PageProps<"/players/[ticker]"
 
 export default async function PlayerPage({ params }: PageProps<"/players/[ticker]">) {
   const ticker = (await params).ticker.toUpperCase();
-  const [player, history] = await Promise.all([getPlayer(ticker), getPriceHistory(ticker)]);
+  const [player, history, latest] = await Promise.all([getPlayer(ticker), getPriceHistory(ticker), getLatestNight()]);
   if (!player) notFound();
 
   const change = player.last_move?.total ?? 0;
@@ -58,9 +60,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[ticker
             </div>
           </header>
 
-          {injured && player.injury_note && (
-            <p className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-200">{player.injury_note}</p>
-          )}
+          <InjuryReport note={player.injury_note} espnId={player.espn_id} night={latest} />
 
           <PriceChart points={history} title={`${player.ticker} price by game night`} />
 
@@ -135,5 +135,38 @@ function WhyItMoved({ move }: { move: LastMove }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function InjuryReport({ note, espnId, night }: {
+  note: string | null; espnId: string | null; night: { game_date: string | null } | null;
+}) {
+  const injury = parseInjuryNote(note);
+  if (!injury) return null;
+  const out = injury.status === "Out";
+  return (
+    <section
+      aria-label="Injury report"
+      className={`rounded-lg border p-4 text-sm ${out ? "border-red-500/25 bg-red-500/5" : "border-amber-500/25 bg-amber-500/5"}`}
+    >
+      <div className="mb-1 flex items-center gap-2">
+        <span className={`rounded px-1.5 text-[10px] font-semibold uppercase ${out ? "bg-red-500/15 text-red-300" : "bg-amber-500/15 text-amber-300"}`}>
+          {injury.status}
+        </span>
+        <h2 className="font-medium">Injury report</h2>
+      </div>
+      <p className="text-white/80">{injury.detail}</p>
+      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
+        <span>Source: ESPN{night?.game_date ? `, as of the ${night.game_date} sync` : ""}</span>
+        <a href={ESPN_INJURIES_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">
+          NBA injury report ↗
+        </a>
+        {espnId && (
+          <a href={espnPlayerUrl(espnId)} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">
+            Player news on ESPN ↗
+          </a>
+        )}
+      </p>
+    </section>
   );
 }

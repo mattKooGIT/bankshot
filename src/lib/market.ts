@@ -19,6 +19,7 @@ export type LastMove = {
 export type Player = {
   ticker: string;
   name: string;
+  espn_id: string | null;
   position: "G" | "F" | "C";
   team: string | null;
   headshot_url: string | null;
@@ -35,7 +36,7 @@ export type Player = {
 };
 
 const PLAYER_COLUMNS =
-  "ticker,name,position,team,headshot_url,price,expected_fp,avg_pts,avg_reb,avg_ast,avg_stl,avg_blk,avg_tov,avg_min,games_played,out_nights,injury_note,last5,last_move";
+  "ticker,name,espn_id,position,team,headshot_url,price,expected_fp,avg_pts,avg_reb,avg_ast,avg_stl,avg_blk,avg_tov,avg_min,games_played,out_nights,injury_note,last5,last_move";
 
 // Postgres numeric comes back as a string; normalise once here.
 function toPlayer(row: Record<string, unknown>): Player {
@@ -88,4 +89,15 @@ export async function getLatestNight(): Promise<{ night: number; game_date: stri
   const { data } = await createPublicClient()
     .from("game_nights").select("night,game_date").order("night", { ascending: false }).limit(1).maybeSingle();
   return data;
+}
+
+/** Public ESPN pages: the league injury report (our source) and a player's profile. */
+export const ESPN_INJURIES_URL = "https://www.espn.com/nba/injuries";
+export const espnPlayerUrl = (espnId: string) => `https://www.espn.com/nba/player/_/id/${espnId}`;
+
+/** Notes are stored as "Out: Newell (toe) has been ruled out…" by the sync job. */
+export function parseInjuryNote(note: string | null): { status: string; detail: string } | null {
+  if (!note) return null;
+  const i = note.indexOf(": ");
+  return i > 0 ? { status: note.slice(0, i), detail: note.slice(i + 2) } : { status: "Injury", detail: note };
 }
