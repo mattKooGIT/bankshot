@@ -316,3 +316,171 @@ $$;
 
 revoke all on function public.leaderboard(uuid, int) from public;
 grant execute on function public.leaderboard(uuid, int) to anon, authenticated;
+
+-- ───────────────────────── Room management ─────────────────────────
+
+-- 12 hex chars (48 bits) from a random UUID; pgcrypto isn't needed.
+create or replace function public.new_invite_code()
+returns text language sql volatile as $$ select left(replace(gen_random_uuid()::text, '-', ''), 12) $$;
+
+create or replace function public.room_has_ended(r public.rooms)
+returns boolean language sql stable as $$
+  select r.finalized_at is not null or (r.ends_at is not null and r.ends_at < eastern_today())
+$$;
+
+create or replace function public.create_room(p_name text, p_starting_cash numeric, p_member_cap int, p_ends_at date)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  rid uuid;
+  code text := new_invite_code();
+begin
+  if uid is null then raise exception 'Sign in to create a room.'; end if;
+  if p_name is null or char_length(trim(p_name)) not between 1 and 40 then
+    raise exception 'Room name must be 1–40 characters.';
+  end if;
+  if p_starting_cash is null or p_starting_cash not between 1000 and 1000000 then
+    raise exception 'Starting cash must be between $1,000 and $1,000,000.';
+  end if;
+  if p_member_cap is not null and p_member_cap not between 2 and 50 then
+    raise exception 'Member cap must be between 2 and 50.';
+  end if;
+  if p_ends_at is not null and p_ends_at <= eastern_today() then
+    raise exception 'End date must be in the future.';
+  end if;
+
+  insert into rooms (name, owner_id, invite_code, starting_cash, member_cap, ends_at)
+    values (trim(p_name), uid, code, round(p_starting_cash, 2), p_member_cap, p_ends_at)
+    returning id into rid;
+  insert into room_members (room_id, user_id, cash) values (rid, uid, round(p_starting_cash, 2));
+  return json_build_object('id', rid, 'invite_code', code);
+end $$;
+
+create or replace function public.join_room(p_invite_code text)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  r   rooms;
+begin
+  if uid is null then raise exception 'Sign in to join.'; end if;
+  -- Lock the room so two people can't both take the last spot.
+  select * into r from rooms where invite_code = p_invite_code and not is_public for update;
+  if not found then raise exception 'This invite link is no longer valid.'; end if;
+  if room_has_ended(r) then raise exception 'This room has ended.'; end if;
+  if exists (select 1 from room_members where room_id = r.id and user_id = uid) then
+    raise exception 'You''re already in this room.';
+  end if;
+  if r.member_cap is not null and (select count(*) from room_members where room_id = r.id) >= r.member_cap then
+    raise exception 'This room is full.';
+  end if;
+  insert into room_members (room_id, user_id, cash) values (r.id, uid, r.starting_cash);
+  return r.id;
+end $$;
+
+-- What an invite link shows before you join (works signed out). Null for a bad code.
+create or replace function public.room_preview(p_invite_code text)
+returns json language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'id', r.id, 'name', r.name, 'owner_username', o.username,
+    'member_count', (select count(*) from room_members m where m.room_id = r.id),
+    'member_cap', r.member_cap, 'starting_cash', r.starting_cash, 'ends_at', r.ends_at,
+    'ended', room_has_ended(r))
+  from rooms r left join profiles o on o.id = r.owner_id
+  where r.invite_code = p_invite_code and not r.is_public
+$$;
+
+create or replace function public.room_invite(p_room uuid)
+returns text language plpgsql stable security definer set search_path = public as $$
+declare
+  r rooms;
+begin
+  select * into r from rooms where id = p_room;
+  if r.owner_id is distinct from auth.uid() or auth.uid() is null then
+    raise exception 'Only the room owner can do that.';
+  end if;
+  return r.invite_code;
+end $$;
+
+-- Members only; never exposes cash.
+create or replace function public.room_roster(p_room uuid)
+returns table (user_id uuid, username text, joined_at timestamptz, is_owner boolean)
+language sql stable security definer set search_path = public as $$
+  select m.user_id, p.username, m.joined_at, m.user_id = r.owner_id
+  from room_members m
+  join profiles p on p.id = m.user_id
+  join rooms r on r.id = m.room_id
+  where m.room_id = p_room
+    and exists (select 1 from room_members me where me.room_id = p_room and me.user_id = auth.uid())
+  order by m.joined_at
+$$;
+
+-- Shared owner check for remove_member / reset_invite.
+create or replace function public.assert_room_owner(p_room uuid)
+returns rooms language plpgsql stable security definer set search_path = public as $$
+declare
+  r rooms;
+begin
+  select * into r from rooms where id = p_room;
+  if r.is_public then raise exception 'The Public room can''t be changed.'; end if;
+  if r.id is null or auth.uid() is null or r.owner_id is distinct from auth.uid() then
+    raise exception 'Only the room owner can do that.';
+  end if;
+  return r;
+end $$;
+
+create or replace function public.remove_member(p_room uuid, p_user uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform assert_room_owner(p_room);
+  if p_user = auth.uid() then raise exception 'You can''t remove yourself.'; end if;
+  -- Cascades to that room's holdings, trades and net-worth history only.
+  delete from room_members where room_id = p_room and user_id = p_user;
+end $$;
+
+create or replace function public.reset_invite(p_room uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  code text := new_invite_code();
+begin
+  perform assert_room_owner(p_room);
+  update rooms set invite_code = code where id = p_room;
+  return code;
+end $$;
+
+-- ───────────────────────── Account settings ─────────────────────────
+
+create or replace function public.set_username(p_username text)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'Sign in to change your username.'; end if;
+  if p_username is null or p_username !~ '^[a-zA-Z0-9_]{3,20}$' then
+    raise exception 'Usernames are 3–20 letters, numbers, or underscores.';
+  end if;
+  if exists (select 1 from profiles where lower(username) = lower(p_username) and id <> uid) then
+    raise exception 'That username is taken.';
+  end if;
+  update profiles set username = p_username where id = uid;
+  return p_username;
+end $$;
+
+-- ───────────────────────── Permissions ─────────────────────────
+
+revoke all on function public.create_room(text, numeric, int, date) from public, anon;
+revoke all on function public.join_room(text)                        from public, anon;
+revoke all on function public.room_preview(text)                     from public;
+revoke all on function public.room_invite(uuid)                      from public, anon;
+revoke all on function public.room_roster(uuid)                      from public, anon;
+revoke all on function public.assert_room_owner(uuid)                from public, anon, authenticated;
+revoke all on function public.remove_member(uuid, uuid)              from public, anon;
+revoke all on function public.reset_invite(uuid)                     from public, anon;
+revoke all on function public.set_username(text)                     from public, anon;
+grant execute on function public.create_room(text, numeric, int, date) to authenticated;
+grant execute on function public.join_room(text)                        to authenticated;
+grant execute on function public.room_preview(text)                     to anon, authenticated;
+grant execute on function public.room_invite(uuid)                      to authenticated;
+grant execute on function public.room_roster(uuid)                      to authenticated;
+grant execute on function public.remove_member(uuid, uuid)              to authenticated;
+grant execute on function public.reset_invite(uuid)                     to authenticated;
+grant execute on function public.set_username(text)                     to authenticated;

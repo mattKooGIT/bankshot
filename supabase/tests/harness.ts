@@ -17,6 +17,11 @@ create schema auth;
 create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
 create function auth.uid() returns uuid language sql stable as
   $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+grant usage on schema public, auth to anon, authenticated;
+grant execute on function auth.uid() to anon, authenticated;
+-- Supabase's default: API roles get table privileges; RLS and explicit revokes do the restricting.
+alter default privileges in schema public grant all on tables to anon, authenticated;
+alter default privileges in schema public grant all on sequences to anon, authenticated;
 `;
 
 export function migrationFiles(): string[] {
@@ -81,4 +86,9 @@ export async function addRealPlayers(
 /** Pins eastern_today() (created in 0006) to a fixed date. */
 export async function setToday(db: Db, date: string) {
   await db.exec(`create or replace function public.eastern_today() returns date language sql stable as $$ select '${date}'::date $$;`);
+}
+
+/** Runs subsequent queries as a Supabase API role (so RLS and grants apply), or back to superuser with null. */
+export async function asRole(db: Db, role: "anon" | "authenticated" | null) {
+  await db.exec(role ? `set role ${role}` : `reset role`);
 }
