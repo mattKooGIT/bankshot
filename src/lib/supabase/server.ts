@@ -35,3 +35,8 @@ export function safeNext(next: string | null | undefined, fallback = "/") {
   if (/[\u0000-\u001f\u007f\\]/.test(next)) return fallback;
   return next;
 }
+
+/** Where to go after signing in: a safe `next`, otherwise the market (the app, not the landing page). */
+export function postLoginPath(next: string | null | undefined): string {
+  return safeNext(next, "/market");
+}

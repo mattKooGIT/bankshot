@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient, safeNext } from "@/lib/supabase/server";
+import { createClient, postLoginPath } from "@/lib/supabase/server";
 import { authCallbackUrl as callbackUrl } from "@/lib/origin";
 
 export type LoginState = { error?: string; sent?: string };
@@ -9,7 +9,7 @@ export type LoginState = { error?: string; sent?: string };
 /** Email magic link: works for both new and returning users. */
 export async function signInWithEmail(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
-  const next = safeNext(String(formData.get("next") ?? ""));
+  const next = postLoginPath(String(formData.get("next") ?? ""));
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email address." };
 
   const supabase = await createClient();
@@ -22,7 +22,7 @@ export async function signInWithEmail(_prev: LoginState, formData: FormData): Pr
 }
 
 export async function signInWithGoogle(formData: FormData) {
-  const next = safeNext(String(formData.get("next") ?? ""));
+  const next = postLoginPath(String(formData.get("next") ?? ""));
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

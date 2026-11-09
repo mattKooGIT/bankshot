@@ -12,3 +12,12 @@ test("safeNext rejects protocol-relative and control-character tricks", () => {
     assert.equal(safeNext(bad), "/", JSON.stringify(bad));
   }
 });
+
+import { postLoginPath } from "@/lib/supabase/server";
+
+test("postLoginPath: returning users land on the market unless a safe next is given", () => {
+  assert.equal(postLoginPath(null), "/market");
+  assert.equal(postLoginPath(""), "/market");
+  assert.equal(postLoginPath("/join/abc"), "/join/abc");
+  assert.equal(postLoginPath("//evil.com"), "/market");
+});

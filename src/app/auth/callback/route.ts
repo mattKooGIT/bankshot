@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient, safeNext } from "@/lib/supabase/server";
+import { createClient, postLoginPath } from "@/lib/supabase/server";
 import { callbackDestination } from "@/lib/auth-callback";
 
 // Google OAuth and email links land here with a one-time `code`, which we exchange
@@ -7,7 +7,7 @@ import { callbackDestination } from "@/lib/auth-callback";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
-  const next = safeNext(searchParams.get("next"));
+  const next = postLoginPath(searchParams.get("next"));
 
   let exchangeOk = false;
   if (code) {
