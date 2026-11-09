@@ -126,3 +126,107 @@ revoke all on function public.room_feed(uuid, bigint, int)          from public,
 grant execute on function public.post_comment(uuid, text)           to authenticated;
 grant execute on function public.toggle_reaction(bigint, text)      to authenticated;
 grant execute on function public.room_feed(uuid, bigint, int)       to authenticated;
+
+-- ───────────────────────── Nightly results posts ─────────────────────────
+-- One 'night' event per private room that has net-worth history for p_night (which
+-- includes a room's final night). Safe to re-run: a room never gets two posts for one night.
+-- Hidden accounts are left out of posted standings.
+
+create or replace function public.post_night_results(p_night int)
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  posted int;
+  d date := (select game_date from game_nights where night = p_night);
+begin
+  with ranked as (
+    select h.room_id, h.user_id, h.night, h.net_worth,
+           rank() over (partition by h.room_id, h.night order by h.net_worth desc) as rk
+    from net_worth_history h
+    join rooms r on r.id = h.room_id and not r.is_public
+    join profiles p on p.id = h.user_id and not p.hidden
+    where h.night in (p_night, p_night - 1)
+  ), standings as (
+    select c.room_id, c.rk,
+      jsonb_build_object(
+        'username', pr.username, 'net_worth', c.net_worth,
+        'change_pct', round(c.net_worth / coalesce(pv.net_worth, r.starting_cash) - 1, 4),
+        'rank', c.rk, 'prev_rank', pv.rk) as j
+    from ranked c
+    join profiles pr on pr.id = c.user_id
+    join rooms r on r.id = c.room_id
+    left join ranked pv on pv.room_id = c.room_id and pv.user_id = c.user_id and pv.night = p_night - 1
+    where c.night = p_night
+  )
+  insert into room_events (room_id, kind, payload)
+    select s.room_id, 'night',
+           jsonb_build_object('night', p_night, 'date', d, 'standings', jsonb_agg(s.j order by s.rk, s.j->>'username'))
+    from standings s
+    where not exists (select 1 from room_events e
+                      where e.room_id = s.room_id and e.kind = 'night' and (e.payload->>'night')::int = p_night)
+    group by s.room_id;
+  get diagnostics posted = row_count;
+  return posted;
+end $$;
+
+-- ───────────────────────── My recap ─────────────────────────
+-- The caller's latest night: change and rank in each of their rooms, plus their best and
+-- worst holdings (by last night's move) in p_room (default: Public).
+
+create or replace function public.my_recap(p_room uuid default null)
+returns json language plpgsql stable security definer set search_path = public as $$
+declare
+  uid   uuid := auth.uid();
+  n     int;
+  target uuid;
+  rooms_json json;
+  best  json;
+  worst json;
+begin
+  if uid is null then return null; end if;
+  select max(night) into n from net_worth_history where user_id = uid;
+  if n is null then return null; end if;
+
+  with ranked as (
+    select h.room_id, h.user_id, h.night, h.net_worth,
+           rank() over (partition by h.room_id, h.night order by h.net_worth desc) as rk,
+           count(*) over (partition by h.room_id, h.night) as sz
+    from net_worth_history h
+    join profiles p on p.id = h.user_id and (not p.hidden or p.id = uid)
+    where h.night in (n, n - 1)
+      and h.room_id in (select room_id from room_members where user_id = uid)
+  )
+  select json_agg(json_build_object(
+           'room_id', m.room_id, 'room_name', r.name, 'is_public', r.is_public, 'net_worth', m.net_worth,
+           'change_pct', round(m.net_worth / coalesce(pv.net_worth, r.starting_cash) - 1, 4),
+           'rank', m.rk, 'prev_rank', pv.rk, 'size', m.sz)
+         order by r.is_public desc, r.name)
+    into rooms_json
+  from ranked m
+  join rooms r on r.id = m.room_id
+  left join ranked pv on pv.room_id = m.room_id and pv.user_id = uid and pv.night = n - 1
+  where m.user_id = uid and m.night = n;
+
+  target := case when exists (select 1 from room_members where room_id = p_room and user_id = uid)
+                 then p_room else public_room_id() end;
+
+  select json_build_object('ticker', pl.ticker, 'name', pl.name, 'total', (pl.last_move->>'total')::numeric,
+                           'status', pl.last_move->>'status', 'line', pl.last_move->'line')
+    into best
+  from holdings h join players pl on pl.ticker = h.ticker
+  where h.user_id = uid and h.room_id = target and pl.last_move is not null
+  order by (pl.last_move->>'total')::numeric desc limit 1;
+
+  select json_build_object('ticker', pl.ticker, 'name', pl.name, 'total', (pl.last_move->>'total')::numeric,
+                           'status', pl.last_move->>'status', 'line', pl.last_move->'line')
+    into worst
+  from holdings h join players pl on pl.ticker = h.ticker
+  where h.user_id = uid and h.room_id = target and pl.last_move is not null
+  order by (pl.last_move->>'total')::numeric asc limit 1;
+
+  return json_build_object('night', n, 'date', (select game_date from game_nights where night = n),
+                           'rooms', coalesce(rooms_json, '[]'::json), 'best', best, 'worst', worst);
+end $$;
+
+revoke all on function public.post_night_results(int) from public, anon, authenticated;
+revoke all on function public.my_recap(uuid)          from public, anon;
+grant execute on function public.my_recap(uuid)       to authenticated;
