@@ -56,3 +56,12 @@ export async function resetInvite(roomId: string): Promise<FormState> {
   refresh();
   return { ok: true, message: "New invite link created. The old one no longer works." };
 }
+
+/** Join via invite code; on success you start trading in that room. */
+export async function joinRoom(code: string): Promise<FormState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("join_room", { p_invite_code: code });
+  if (error) return { ok: false, message: error.message };
+  await setRoomCookie(data as string);
+  redirect(`/rooms/${data}`);
+}
