@@ -1,0 +1,170 @@
+{
+ "events": [
+  {
+   "id": "401909092",
+   "date": "2026-10-22T02:00Z",
+   "seasonType": {
+    "type": 2
+   },
+   "competitions": [
+    {
+     "status": {
+      "type": {
+       "name": "STATUS_FINAL"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "LAL"
+       },
+       "score": {
+        "value": 127.0,
+        "displayValue": "127"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "GS"
+       },
+       "score": {
+        "value": 105.0,
+        "displayValue": "105"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401909851",
+   "date": "2026-10-24T02:00Z",
+   "seasonType": {
+    "type": 2
+   },
+   "competitions": [
+    {
+     "status": {
+      "type": {
+       "name": "STATUS_FINAL"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "LAL"
+       },
+       "score": {
+        "value": 125.0,
+        "displayValue": "125"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "LAC"
+       },
+       "score": {
+        "value": 117.0,
+        "displayValue": "117"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401909952",
+   "date": "2026-11-20T02:30Z",
+   "seasonType": {
+    "type": 2
+   },
+   "competitions": [
+    {
+     "status": {
+      "type": {
+       "name": "STATUS_SCHEDULED"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "ATL"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "LAL"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401909971",
+   "date": "2026-11-12T01:00Z",
+   "seasonType": {
+    "type": 2
+   },
+   "competitions": [
+    {
+     "status": {
+      "type": {
+       "name": "STATUS_SCHEDULED"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "MIL"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "LAL"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "999999999",
+   "date": "2026-11-12T01:00Z",
+   "seasonType": {
+    "type": 1
+   },
+   "competitions": [
+    {
+     "status": {
+      "type": {
+       "name": "STATUS_SCHEDULED"
+      }
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "team": {
+        "abbreviation": "MIL"
+       }
+      },
+      {
+       "homeAway": "away",
+       "team": {
+        "abbreviation": "LAL"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

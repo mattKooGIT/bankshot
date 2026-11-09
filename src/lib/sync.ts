@@ -2,7 +2,7 @@
 // Relative imports only, so it also runs outside Next.js.
 import { createAdminClient } from "./supabase/admin";
 import { addDays, easternToday } from "./dates";
-import { fetchBoxScore, fetchGames, fetchInjuries, headshotUrl, type EspnGame } from "./espn";
+import { fetchBoxScore, fetchGames, fetchInjuries, fetchTeams, fetchTeamSchedule, headshotUrl, type EspnGame } from "./espn";
 
 type Admin = ReturnType<typeof createAdminClient>;
 const SKIPPED = new Set(["STATUS_POSTPONED", "STATUS_CANCELED"]);
@@ -93,6 +93,21 @@ export async function bootstrap(seasonStart: string, log = console.log) {
   log(`Updated team/headshot/injuries (${out.length} out).`);
 }
 
+/**
+ * Upserts every team's full season schedule into `games` (each game appears in two
+ * teams' schedules, so de-duplicate). Keeps postponements and reschedules current.
+ */
+export async function syncSchedule(db: Admin = createAdminClient()): Promise<number> {
+  const teams = await fetchTeams();
+  const byId = new Map<string, EspnGame>();
+  for (const g of (await inBatches(teams, 5, (t) => fetchTeamSchedule(t.id))).flat()) byId.set(g.espn_id, g);
+  const games = [...byId.values()];
+  for (let i = 0; i < games.length; i += 500) {
+    check(await db.from("games").upsert(games.slice(i, i + 500)), "upsert schedule");
+  }
+  return games.length;
+}
+
 export type NightResult = { date: string; result: "applied" | "no-games" | "waiting"; night?: number; detail?: string };
 
 /**
@@ -106,6 +121,14 @@ export async function syncNights(until = addDays(easternToday(), -1), log = cons
     "load last night",
   ) as { game_date: string } | null;
   if (!last) throw new Error("Market not bootstrapped yet. Run `npm run sync -- bootstrap` first.");
+
+  // Schedule first, so postponed games are marked before we check that a night is complete.
+  // A failure here must not block the nightly price move.
+  try {
+    log(`Synced ${await syncSchedule(db)} scheduled games.`);
+  } catch (e) {
+    log(`Warning: schedule sync failed (${e instanceof Error ? e.message : e}); continuing with prices.`);
+  }
 
   const results: NightResult[] = [];
   for (let d = addDays(last.game_date, 1); d <= until; d = addDays(d, 1)) {

@@ -120,3 +120,41 @@ export async function fetchInjuries(): Promise<EspnInjury[]> {
 }
 
 export const headshotUrl = (espnId: string) => `https://a.espncdn.com/i/headshots/nba/players/full/${espnId}.png`;
+
+const easternDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
+
+/** All 30 teams' ESPN ids and abbreviations. */
+export async function fetchTeams(): Promise<{ id: string; abbr: string }[]> {
+  type Teams = { sports: { leagues: { teams: { team: { id: string; abbreviation: string } }[] }[] }[] };
+  const data = await getJson<Teams>(`${BASE}/teams`);
+  return data.sports[0].leagues[0].teams.map(({ team }) => ({ id: team.id, abbr: team.abbreviation }));
+}
+
+/**
+ * A team's whole season from /teams/{id}/schedule. Regular season and playoffs only;
+ * game_date is the US-Eastern date of tip-off (a 10:30 PM ET game is 02:30Z next day).
+ */
+export function parseTeamSchedule(json: unknown): EspnGame[] {
+  type Ev = {
+    id: string; date: string; seasonType?: { type?: number };
+    competitions: { status: { type: { name: string } };
+      competitors: { homeAway: "home" | "away"; team: { abbreviation: string }; score?: { value?: number } }[] }[];
+  };
+  return ((json as { events?: Ev[] }).events ?? [])
+    .filter((e) => e.seasonType?.type === 2 || e.seasonType?.type === 3)
+    .map((e) => {
+      const c = e.competitions[0];
+      const home = c.competitors.find((t) => t.homeAway === "home")!;
+      const away = c.competitors.find((t) => t.homeAway === "away")!;
+      const final = c.status.type.name === "STATUS_FINAL";
+      return {
+        espn_id: e.id, game_date: easternDate.format(new Date(e.date)), start_time: e.date, status: c.status.type.name,
+        home_team: home.team.abbreviation, away_team: away.team.abbreviation,
+        home_score: final ? Number(home.score?.value ?? 0) : null, away_score: final ? Number(away.score?.value ?? 0) : null,
+      };
+    });
+}
+
+export async function fetchTeamSchedule(teamId: string): Promise<EspnGame[]> {
+  return parseTeamSchedule(await getJson(`${BASE}/teams/${teamId}/schedule`));
+}
