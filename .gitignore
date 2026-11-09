@@ -12,3 +12,7 @@ out/
 next-env.d.ts
 .vercel
 supabase/.temp/
+/coverage
+/build
+*.pem
+npm-debug.log*
