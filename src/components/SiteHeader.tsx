@@ -5,6 +5,8 @@ import { formatMoney } from "@/lib/format";
 import { getCurrentRoom, getMyRooms } from "@/lib/rooms";
 import { RoomSwitcher } from "./RoomSwitcher";
 import { LiveBadge } from "./LiveBadge";
+import { RecapBanner } from "./RecapBanner";
+import type { Recap } from "@/lib/recap";
 
 // The nav is static (prerendered); only the account area depends on cookies,
 // so it streams in inside its own Suspense boundary.
@@ -29,8 +31,19 @@ export function SiteHeader() {
           </Suspense>
         </div>
       </nav>
+      <Suspense fallback={null}>
+        <RecapSlot />
+      </Suspense>
     </header>
   );
+}
+
+async function RecapSlot() {
+  const current = await getCurrentRoom();
+  if (!current) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("my_recap", { p_room: current.room.id });
+  return <RecapBanner recap={(data as Recap | null) ?? null} currentRoomId={current.room.id} />;
 }
 
 async function AccountArea() {

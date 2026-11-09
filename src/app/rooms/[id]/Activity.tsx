@@ -122,7 +122,7 @@ export function Activity({ roomId, initial, me }: { roomId: string; initial: Fee
   );
 }
 
-function NightCard({ ev, me }: { ev: FeedEvent; me: string }) {
+export function NightCard({ ev, me }: { ev: FeedEvent; me: string }) {
   const standings = (ev.payload.standings as NightStanding[] | undefined) ?? [];
   const top = standings.slice(0, 3);
   const mine = standings.find((s) => s.username === me);
