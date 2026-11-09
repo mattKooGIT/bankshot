@@ -119,7 +119,7 @@ async function Portfolio() {
                   <tr key={h.ticker} className="border-t border-white/5 hover:bg-white/[0.03]">
                     <td className="px-3 py-2">
                       <Link href={`/players/${h.ticker}`} className="flex items-baseline gap-2">
-                        <span className="w-16 font-mono font-semibold text-emerald-300">{h.ticker}</span>
+                        <span className="w-24 shrink-0 font-mono font-semibold text-emerald-300">{h.ticker}</span>
                         <span>{h.name}</span>
                         {h.out && <span className="rounded bg-red-500/15 px-1.5 text-[10px] font-semibold uppercase text-red-300">Out</span>}
                       </Link>

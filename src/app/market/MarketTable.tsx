@@ -75,7 +75,7 @@ export function MarketTable({ players }: { players: Player[] }) {
                 <tr key={p.ticker} className="border-t border-white/5 hover:bg-white/[0.03]">
                   <td className="px-3 py-2">
                     <Link href={`/players/${p.ticker}`} className="flex items-baseline gap-2">
-                      <span className="w-16 font-mono font-semibold text-emerald-300">{p.ticker}</span>
+                      <span className="w-24 shrink-0 font-mono font-semibold text-emerald-300">{p.ticker}</span>
                       <span>{p.name}</span>
                       {p.team && <span className="text-xs text-white/40">{p.team}</span>}
                       {p.out_nights > 0 && (
