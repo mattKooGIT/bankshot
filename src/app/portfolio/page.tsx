@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatMoney, formatPct } from "@/lib/format";
 import { PriceChart } from "@/components/PriceChart";
 import { getCurrentRoom } from "@/lib/rooms";
+import { addDays, easternToday } from "@/lib/dates";
+import { dayLabel, gamesWithin, getTeamsUpcoming, matchup, nextGame, tipTime } from "@/lib/schedule";
 
 export const metadata: Metadata = { title: "Portfolio · Courtside Exchange" };
 
@@ -22,7 +24,7 @@ type HoldingRow = {
   ticker: string;
   shares: number;
   avg_cost: number | string;
-  players: { name: string; price: number | string; out_nights: number; last_move: { total: number } | null } | null;
+  players: { name: string; team: string | null; price: number | string; out_nights: number; last_move: { total: number } | null } | null;
 };
 
 async function Portfolio() {
@@ -45,7 +47,7 @@ async function Portfolio() {
   const supabase = await createClient();
   // RLS restricts holdings, trades, and net worth history to this user's rows; filter to this room.
   const [{ data: holdingRows }, { data: trades }, { data: history }] = await Promise.all([
-    supabase.from("holdings").select("ticker, shares, avg_cost, players(name, price, out_nights, last_move)")
+    supabase.from("holdings").select("ticker, shares, avg_cost, players(name, team, price, out_nights, last_move)")
       .eq("user_id", userId).eq("room_id", room.id),
     supabase.from("trades").select("id, ticker, side, shares, price, night, created_at")
       .eq("user_id", userId).eq("room_id", room.id).order("created_at", { ascending: false }).limit(20),
@@ -61,11 +63,13 @@ async function Portfolio() {
       return {
         ticker: h.ticker, name: h.players?.name ?? h.ticker, shares: h.shares, cost, price, value,
         pl: value - h.shares * cost, plPct: cost ? price / cost - 1 : 0,
-        lastNight: h.players?.last_move?.total ?? null, out: (h.players?.out_nights ?? 0) > 0,
+        lastNight: h.players?.last_move?.total ?? null, out: (h.players?.out_nights ?? 0) > 0, team: h.players?.team ?? null,
       };
     })
     .sort((a, b) => b.value - a.value);
 
+  const today = easternToday();
+  const upcoming = await getTeamsUpcoming(holdings.flatMap((h) => (h.team ? [h.team] : [])), today, addDays(today, 13));
   const invested = holdings.reduce((s, h) => s + h.value, 0);
   const netWorth = cash + invested;
   const totalReturn = netWorth / STARTING_CASH - 1;
@@ -113,6 +117,8 @@ async function Portfolio() {
                   <th className="px-3 py-2 text-right font-medium">Value</th>
                   <th className="px-3 py-2 text-right font-medium">P/L</th>
                   <th className="px-3 py-2 text-right font-medium">Last night</th>
+                  <th className="px-3 py-2 font-medium">Next</th>
+                  <th className="px-3 py-2 text-right font-medium" title="Games in the next 7 days">Games (7d)</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,6 +141,13 @@ async function Portfolio() {
                     <td className={`px-3 py-2 text-right font-mono ${(h.lastNight ?? 0) > 0 ? "text-emerald-400" : (h.lastNight ?? 0) < 0 ? "text-red-400" : "text-white/40"}`}>
                       {h.lastNight === null ? "—" : formatPct(h.lastNight)}
                     </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-xs text-white/70">
+                      {(() => {
+                        const g = h.team ? nextGame(upcoming, h.team) : null;
+                        return g && h.team ? `${dayLabel(g.date, today)} ${matchup(g, h.team)} · ${tipTime(g.startTime)}` : "—";
+                      })()}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">{h.team ? gamesWithin(upcoming, h.team, today) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
