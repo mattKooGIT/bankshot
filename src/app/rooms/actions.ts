@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { ROOM_COOKIE } from "@/lib/rooms";
+import { PUBLIC_ROOM_ID, ROOM_COOKIE } from "@/lib/rooms";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "@/lib/forms";
 
@@ -64,4 +64,25 @@ export async function joinRoom(code: string): Promise<FormState> {
   if (error) return { ok: false, message: error.message };
   await setRoomCookie(data as string);
   redirect(`/rooms/${data}`);
+}
+
+/** After leaving or deleting, stop trading in a room that's gone for you. */
+async function leaveCurrentRoomIf(roomId: string) {
+  if ((await cookies()).get(ROOM_COOKIE)?.value === roomId) await setRoomCookie(PUBLIC_ROOM_ID);
+}
+
+export async function leaveRoom(roomId: string): Promise<FormState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("leave_room", { p_room: roomId });
+  if (error) return { ok: false, message: error.message };
+  await leaveCurrentRoomIf(roomId);
+  redirect("/rooms");
+}
+
+export async function deleteRoom(roomId: string): Promise<FormState> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_room", { p_room: roomId });
+  if (error) return { ok: false, message: error.message };
+  await leaveCurrentRoomIf(roomId);
+  redirect("/rooms");
 }

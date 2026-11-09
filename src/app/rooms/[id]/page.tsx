@@ -8,6 +8,7 @@ import { siteOrigin } from "@/lib/origin";
 import { getCurrentRoom, getMyRooms, isRoomEnded } from "@/lib/rooms";
 import { switchRoom } from "../actions";
 import { InviteLink, RemoveMemberButton } from "./OwnerControls";
+import { DangerZone } from "./DangerZone";
 
 export const metadata: Metadata = { title: "Room · Courtside Exchange" };
 
@@ -108,6 +109,9 @@ async function RoomView({ params }: Pick<PageProps<"/rooms/[id]">, "params">) {
           ))}
         </ul>
       </section>
+
+      <DangerZone roomId={id} roomName={room.name} isOwner={isOwner} ended={ended}
+        heir={members.find((m) => !m.is_owner)?.username ?? null} />
     </div>
   );
 }
