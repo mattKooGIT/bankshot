@@ -31,6 +31,15 @@ async function demoSession() {
   const upd = await admin.from("profiles").update({ username: "courtside_demo", hidden: true }).eq("id", userId);
   if (upd.error) throw new Error(`${upd.error.message} (did you run migration 0009?)`);
 
+  // Start every recording from a clean $10,000 (only this demo account's own rows).
+  const PUBLIC = "00000000-0000-4000-8000-000000000001";
+  for (const table of ["holdings", "trades", "net_worth_history"] as const) {
+    const r = await admin.from(table).delete().eq("user_id", userId).eq("room_id", PUBLIC);
+    if (r.error) throw new Error(`reset ${table}: ${r.error.message}`);
+  }
+  const cash = await admin.from("room_members").update({ cash: 10000 }).eq("user_id", userId).eq("room_id", PUBLIC);
+  if (cash.error) throw new Error(`reset cash: ${cash.error.message}`);
+
   // Verify the one-time token with the same SSR library the app uses, capturing its cookies.
   const jar: { name: string; value: string }[] = [];
   const ssr = createServerClient(URL_, ANON, {
@@ -75,6 +84,7 @@ const OVERLAY = `
     el.textContent = text;
   };
   window.__endCard = (title, sub) => {
+    document.getElementById("demo-cursor")?.remove();
     const el = document.createElement("div"); el.id = "demo-end";
     el.innerHTML = title + "<small>" + sub + "</small>"; document.body.appendChild(el);
   };
@@ -109,11 +119,26 @@ async function click(p: Page, target: Locator) {
 
 async function go(p: Page, path: string) {
   await p.goto(BASE + path, { waitUntil: "networkidle" });
+  // Streamed sections show pulsing placeholders first; wait until they're replaced.
+  await p.waitForFunction(() => document.querySelectorAll(".animate-pulse").length === 0, null, { timeout: 15_000 });
 }
 
 // ───────── Recording ─────────
 
+/** The priciest healthy player whose team is playing live right now (so every scene agrees). */
+async function pickStar(): Promise<{ ticker: string; name: string }> {
+  const live = await (await fetch(`${BASE}/api/live`)).json() as { games: { state: string; home: { abbr: string }; away: { abbr: string } }[] };
+  const teams = live.games.filter((g) => g.state === "in").flatMap((g) => [g.home.abbr, g.away.abbr]);
+  const pub = createClient(URL_, ANON, { auth: { persistSession: false } });
+  const { data } = await pub.from("players").select("ticker,name,team").eq("active", true).eq("out_nights", 0)
+    .is("injury_note", null).in("team", teams).order("price", { ascending: false }).limit(1);
+  if (!data?.length) throw new Error(`No healthy player on a live team (${teams.join(", ")}). Is the fake ESPN server running?`);
+  return data[0];
+}
+
 async function main() {
+  const star = await pickStar();
+  console.log(`Demo player: ${star.ticker} (${star.name})`);
   const { cookies, ssr } = await demoSession();
   const videoDir = mkdtempSync(join(tmpdir(), "courtside-demo-"));
   const browser = await chromium.launch();
@@ -122,7 +147,12 @@ async function main() {
     recordVideo: { dir: videoDir, size: { width: 1280, height: 720 } },
     reducedMotion: "no-preference",
   });
-  await ctx.addCookies(cookies.map((c) => ({ ...c, url: BASE })));
+  // Trade in a private room: private-room trades never count as market demand,
+  // so the demo can't nudge real prices (only Public trades do).
+  const made = await ssr.rpc("create_room", { p_name: "Demo portfolio", p_starting_cash: 10000, p_member_cap: null, p_ends_at: null });
+  if (made.error) throw new Error(`create demo room: ${made.error.message}`);
+  const demoRoom = (made.data as { id: string }).id;
+  await ctx.addCookies([...cookies, { name: "room", value: demoRoom }].map((c) => ({ ...c, url: BASE })));
   await ctx.addInitScript(OVERLAY);
   const p = await ctx.newPage();
   const started = Date.now();
@@ -137,14 +167,19 @@ async function main() {
   await pause(p, 1600);
 
   // 2. Player page
-  await click(p, p.getByRole("link", { name: /Luka/ }).first());
-  await p.waitForURL(/\/players\/LUKA/);
+  await click(p, p.locator(`a[href="/players/${star.ticker}"]`).first());
+  await p.waitForURL(new RegExp(`/players/${star.ticker}$`));
   await caption(p, "Prices move on real box scores.");
-  await pause(p, 1500);
-  await p.mouse.wheel(0, 650);
+  await pause(p, 2200);
+  await p.mouse.wheel(0, 700);
+  await caption(p, "See who he plays next, and how he's been doing.");
+  await pause(p, 1200);
+  await moveTo(p, p.getByRole("heading", { name: "Upcoming" }));
+  await pause(p, 1400);
+  await moveTo(p, p.getByRole("heading", { name: "Recent games" }));
   await pause(p, 1800);
-  await p.mouse.wheel(0, -650);
-  await pause(p, 800);
+  await p.mouse.wheel(0, -900);
+  await pause(p, 900);
 
   // 3. Buy
   await caption(p, "Buy with paper money.");
@@ -153,9 +188,16 @@ async function main() {
   await shares.fill("");
   await shares.pressSequentially("5", { delay: 180 });
   await pause(p, 700);
-  await click(p, p.getByRole("button", { name: /^Buy 5 LUKA/ }));
+  await click(p, p.getByRole("button", { name: new RegExp(`^Buy 5 ${star.ticker}`) }));
   await p.getByRole("status").filter({ hasText: /Bought/ }).waitFor({ timeout: 10_000 });
   await pause(p, 1800);
+
+  // 3b. Portfolio
+  await go(p, "/portfolio");
+  await caption(p, "Track every position, and when they play next.");
+  await pause(p, 1200);
+  await moveTo(p, p.getByRole("columnheader", { name: "Next" }));
+  await pause(p, 2200);
 
   // 4. Live scores
   await go(p, "/scores");
@@ -193,9 +235,11 @@ async function main() {
   await browser.close();
   copyFileSync(await video.path(), "public/demo.webm");
 
-  // Clean up the demo room (its trades in Public stay; the account is hidden).
-  const del = await ssr.rpc("delete_room", { p_room: roomId });
-  if (del.error) console.warn(`Couldn't delete the demo room: ${del.error.message}`);
+  // Clean up both rooms the recording made (and with them, every demo trade).
+  for (const id of [roomId, demoRoom]) {
+    const del = await ssr.rpc("delete_room", { p_room: id });
+    if (del.error) console.warn(`Couldn't delete demo room ${id}: ${del.error.message}`);
+  }
 
   console.log(`Recorded ~${seconds}s → public/demo.webm (+ public/demo-poster.png)`);
 }

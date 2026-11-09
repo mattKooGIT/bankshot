@@ -87,7 +87,7 @@ async function Portfolio() {
 
   return (
     <div className="space-y-10">
-      <h1 className="-mb-4 text-2xl font-semibold">Portfolio <span className="text-white/40">· {room.name}</span></h1>
+      <h1 className="text-2xl font-semibold">Portfolio <span className="text-white/40">· {room.name}</span></h1>
       <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">

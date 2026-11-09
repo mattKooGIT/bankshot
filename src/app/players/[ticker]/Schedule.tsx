@@ -4,13 +4,13 @@ export async function Schedule({ team, espnId, expectedFp }: { team: string | nu
   const { today, upcoming, log } = await getPlayerSchedule(team, espnId);
 
   return (
-    <div className="grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+    <div className="space-y-8">
       <section>
         <h2 className="mb-3 text-sm font-medium text-white/60">Upcoming</h2>
         {upcoming.length === 0 || !team ? (
           <p className="text-sm text-white/40">No upcoming games scheduled.</p>
         ) : (
-          <ul className="divide-y divide-white/5 rounded-lg border border-white/10 text-sm">
+          <ul className="max-w-md divide-y divide-white/5 rounded-lg border border-white/10 text-sm">
             {upcoming.map((g) => {
               const off = g.status === "STATUS_POSTPONED" || g.status === "STATUS_CANCELED";
               return (
@@ -31,7 +31,7 @@ export async function Schedule({ team, espnId, expectedFp }: { team: string | nu
           <p className="text-sm text-white/40">No games played yet this season.</p>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-white/10">
-            <table className="w-full text-xs">
+            <table className="w-full whitespace-nowrap text-xs">
               <thead className="bg-white/[0.03] text-white/50">
                 <tr>
                   <th className="px-2 py-1.5 text-left font-medium">Date</th>
