@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { eventText, rankMove, REACTIONS, relativeTime, type FeedEvent, type NightStanding } from "@/lib/feed";
-import { formatMoney, formatPct } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
+import { pct1 } from "@/lib/recap";
 import { loadFeed, postComment, toggleReaction } from "./feed-actions";
 
 const POLL_MS = 30_000;
@@ -137,7 +138,7 @@ export function NightCard({ ev, me }: { ev: FeedEvent; me: string }) {
               <td className="w-8 py-0.5">#{s.rank}</td>
               <td className="w-10 text-white/50">{rankMove(s.rank, s.prev_rank)}</td>
               <td>{s.username}{s.username === me && <span className="ml-1 text-emerald-300">(you)</span>}</td>
-              <td className={`text-right ${s.change_pct > 0 ? "text-emerald-400" : s.change_pct < 0 ? "text-red-400" : ""}`}>{formatPct(Number(s.change_pct))}</td>
+              <td className={`text-right ${s.change_pct > 0 ? "text-emerald-400" : s.change_pct < 0 ? "text-red-400" : ""}`}>{pct1(Number(s.change_pct))}</td>
               <td className="w-24 text-right">{formatMoney(s.net_worth)}</td>
             </tr>
           ))}

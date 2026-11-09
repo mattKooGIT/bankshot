@@ -16,7 +16,7 @@ export const recapFixture: Recap = {
 export const topsFixture: Record<string, TopRow[]> = {
   fnh: [
     { username: "jalen_b", net_worth: 10910.55, rank: 1 },
-    { username: "you", net_worth: 10432.1, rank: 2 },
+    { username: "matt", net_worth: 10432.1, rank: 2 },
     { username: "marcus23", net_worth: 10120.0, rank: 3 },
   ],
 };
@@ -25,7 +25,7 @@ export const nightEventFixture: FeedEvent = {
   id: "999", kind: "night", actor: null, created_at: new Date().toISOString(), reactions: { "🔥": 3, "💀": 1 }, mine: ["🔥"],
   payload: { night: 3, date: "2026-11-11", standings: [
     { username: "jalen_b", net_worth: 10910.55, change_pct: 0.061, rank: 1, prev_rank: 3, },
-    { username: "you", net_worth: 10432.1, change_pct: 0.042, rank: 2, prev_rank: 2 },
+    { username: "matt", net_worth: 10432.1, change_pct: 0.042, rank: 2, prev_rank: 2 },
     { username: "marcus23", net_worth: 10120.0, change_pct: -0.023, rank: 3, prev_rank: 1 },
     { username: "kev", net_worth: 9701.3, change_pct: -0.01, rank: 4, prev_rank: 4 },
   ] },

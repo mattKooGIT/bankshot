@@ -24,11 +24,11 @@ async function RecapPreview() {
         </p>
         <section>
           <h1 className="text-2xl font-semibold">Last night</h1>
-          <div className="mt-6"><RecapView recap={recapFixture} tops={topsFixture} me="you" /></div>
+          <div className="mt-6"><RecapView recap={recapFixture} tops={topsFixture} me="matt" /></div>
         </section>
         <section>
           <h2 className="mb-3 text-sm font-medium text-white/60">Nightly results post in a room&apos;s Activity feed</h2>
-          <div className="rounded-lg border border-white/10 px-4 py-3 text-sm"><NightCard ev={nightEventFixture} me="you" /></div>
+          <div className="rounded-lg border border-white/10 px-4 py-3 text-sm"><NightCard ev={nightEventFixture} me="matt" /></div>
         </section>
       </div>
     </main>
