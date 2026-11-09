@@ -1,0 +1,184 @@
+{
+ "events": [
+  {
+   "id": "401909956",
+   "date": "2026-11-10T01:00Z",
+   "season": {
+    "type": 2
+   },
+   "status": {
+    "period": 5,
+    "displayClock": "0.0",
+    "type": {
+     "name": "STATUS_FINAL",
+     "state": "post",
+     "completed": true
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "121",
+       "team": {
+        "abbreviation": "DAL"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "118",
+       "team": {
+        "abbreviation": "IND"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401909955",
+   "date": "2026-11-10T00:30Z",
+   "season": {
+    "type": 2
+   },
+   "status": {
+    "period": 0,
+    "displayClock": "0.0",
+    "type": {
+     "name": "STATUS_SCHEDULED",
+     "state": "pre",
+     "completed": false
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "0",
+       "team": {
+        "abbreviation": "TOR"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "0",
+       "team": {
+        "abbreviation": "MEM"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401909957",
+   "date": "2026-11-10T01:30Z",
+   "season": {
+    "type": 1
+   },
+   "status": {
+    "period": 0,
+    "displayClock": "0.0",
+    "type": {
+     "name": "STATUS_SCHEDULED",
+     "state": "pre",
+     "completed": false
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "0",
+       "team": {
+        "abbreviation": "HOU"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "0",
+       "team": {
+        "abbreviation": "DEN"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401909953",
+   "date": "2026-11-10T00:00Z",
+   "season": {
+    "type": 2
+   },
+   "status": {
+    "period": 2,
+    "displayClock": "0.0",
+    "type": {
+     "name": "STATUS_HALFTIME",
+     "state": "in",
+     "completed": false
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "55",
+       "team": {
+        "abbreviation": "CHA"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "49",
+       "team": {
+        "abbreviation": "CLE"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401909952",
+   "date": "2026-11-10T00:00Z",
+   "season": {
+    "type": 2
+   },
+   "status": {
+    "period": 3,
+    "displayClock": "4:12",
+    "type": {
+     "name": "STATUS_IN_PROGRESS",
+     "state": "in",
+     "completed": false
+    }
+   },
+   "competitions": [
+    {
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "78",
+       "team": {
+        "abbreviation": "ATL"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "81",
+       "team": {
+        "abbreviation": "LAL"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
