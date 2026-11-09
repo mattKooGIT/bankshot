@@ -82,3 +82,31 @@ test("last unsubscribe stops polling", async () => {
   off();
   assert.equal(h.timers.length, 0);
 });
+
+test("re-subscribing right after a fetch doesn't refetch (React re-subscribe on render)", async () => {
+  const h = harness([data("in")]);
+  const off = h.store.subscribe(() => {});
+  await h.flush();
+  off();
+  h.store.subscribe(() => {});
+  await h.flush();
+  assert.equal(h.fetches(), 1);
+  assert.equal(h.timers.length, 1);
+});
+
+test("before tip-off, wakes up 15 minutes before the first game", async () => {
+  // harness now() is 00:30Z; game tips at 02:30Z, so wake at 02:15Z = 105 minutes from now
+  const h = harness([{ ...data("pre"), games: [{ ...data("pre").games[0], startTime: "2026-11-10T02:30:00Z" }] }]);
+  h.store.subscribe(() => {});
+  await h.flush();
+  assert.equal(h.timers[0]?.ms, 105 * 60_000);
+});
+
+test("a failed first fetch retries instead of giving up", async () => {
+  const h = harness([new Error("blip"), data("in")]);
+  h.store.subscribe(() => {});
+  await h.flush();
+  assert.equal(h.timers[0]?.ms, 30_000);
+  await h.fire();
+  assert.equal(h.store.getSnapshot().data?.games[0].state, "in");
+});

@@ -109,7 +109,7 @@ export function parseBoxScore(json: unknown, gameId: string): LiveLine[] {
   return lines;
 }
 
-const TIP_WINDOW_MS = 15 * 60 * 1000;
+export const TIP_WINDOW_MS = 15 * 60 * 1000;
 
 /** Keep polling while a game is live or one tips off within 15 minutes. */
 export function shouldPoll(games: LiveGame[], now: Date): boolean {
@@ -126,4 +126,20 @@ export function matchLines<T extends { espnId: string }>(items: T[], lines: Live
     if (l) out.set(it.espnId, l);
   }
   return out;
+}
+
+const STALE_AFTER_MS = 45_000;
+
+/** Data older than 45s counts as delayed even if the cache still serves it. */
+export function withStaleness(d: LiveData, now: Date): LiveData {
+  const old = now.getTime() - new Date(d.updatedAt).getTime() > STALE_AFTER_MS;
+  return old && !d.stale ? { ...d, stale: true } : d;
+}
+
+/** Live games' box scores are refetched every cycle; final ones never change, so they're cached long. */
+export function boxScorePlan(games: LiveGame[]): { live: string[]; final: string[] } {
+  return {
+    live: games.filter((g) => g.state === "in").map((g) => g.id),
+    final: games.filter((g) => g.state === "post").map((g) => g.id),
+  };
 }

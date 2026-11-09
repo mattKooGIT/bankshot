@@ -65,3 +65,16 @@ test("matchLines matches by ESPN id even when the team differs (traded player)",
   const m = matchLines([{ espnId: jake.espnId, team: "SOMEWHERE_ELSE" }], lines);
   assert.equal(m.get(jake.espnId)?.pts, 5);
 });
+
+import { boxScorePlan, withStaleness } from "./live";
+
+test("withStaleness marks data older than 45s as stale", () => {
+  const d = { games: [], lines: [], updatedAt: "2026-11-10T00:00:00Z", stale: false };
+  assert.equal(withStaleness(d, new Date("2026-11-10T00:00:30Z")).stale, false);
+  assert.equal(withStaleness(d, new Date("2026-11-10T00:00:50Z")).stale, true);
+});
+
+test("boxScorePlan: live games refetch, finals are fetched once and cached, upcoming skipped", () => {
+  const games = parseScoreboard(fx("scoreboard.json"));
+  assert.deepEqual(boxScorePlan(games), { live: ["401909952", "401909953"], final: ["401909956"] });
+});

@@ -27,11 +27,13 @@ function getStore() {
 
 const SERVER: LiveSnapshot = { data: null, error: false };
 
+// Stable references: an inline subscribe would make React re-subscribe on every render,
+// which (before the store's freshness guard) turned into a tight fetch loop.
+const subscribe = (fn: () => void) => getStore().subscribe(fn);
+const getSnapshot = () => getStore().getSnapshot();
+const getServerSnapshot = () => SERVER;
+
 /** Tonight's live scores, shared by every component on the page (one request per 30s while games are on). */
 export function useLive(): LiveSnapshot {
-  return useSyncExternalStore(
-    (fn) => getStore().subscribe(fn),
-    () => getStore().getSnapshot(),
-    () => SERVER,
-  );
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
