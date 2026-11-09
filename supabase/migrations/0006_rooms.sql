@@ -182,3 +182,137 @@ end $$;
 
 revoke all on function public.execute_trade(uuid, text, text, int) from public, anon;
 grant execute on function public.execute_trade(uuid, text, text, int) to authenticated;
+
+
+-- ───────────────────────── Nightly: per-room net worth and finalization ─────────────────────────
+-- apply_real_game_night() from 0002; pricing is unchanged. pending_demand now only
+-- accumulates from Public trades (see execute_trade above).
+
+create or replace function public.apply_real_game_night(p_date date, p_out text[] default '{}')
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  n      int;
+  p      players;
+  st     player_game_stats;
+  night_status text;
+  line   jsonb;
+  fp     numeric;
+  perf   numeric;
+  gap    numeric;
+  dem    numeric;
+  noise  numeric;
+  total  numeric;
+  new_last5 numeric[];
+  new_out   int;
+  team_played boolean;
+begin
+  if exists (select 1 from game_nights where game_date = p_date) then
+    raise exception 'Game night for % was already applied.', p_date;
+  end if;
+  if exists (select 1 from games where game_date = p_date and games.status <> 'STATUS_FINAL'
+             and games.status not in ('STATUS_POSTPONED','STATUS_CANCELED')) then
+    raise exception 'Not every game on % is final yet.', p_date;
+  end if;
+
+  n := current_night() + 1;
+  insert into game_nights (night, game_date) values (n, p_date);
+
+  for p in select * from players where active for update loop
+    perf := 0; line := null; fp := null; new_last5 := p.last5;
+    select * into st from player_game_stats s
+      where s.espn_id = p.espn_id and s.game_date = p_date and s.min > 0 limit 1;
+    team_played := exists (select 1 from games g where g.game_date = p_date
+                           and g.status = 'STATUS_FINAL' and p.team in (g.home_team, g.away_team));
+
+    if p.espn_id = any(p_out) then
+      night_status := 'injured';
+      new_out := 1;
+      perf := case when p.out_nights > 0 then -0.01 else -0.08 end;
+    elsif st.espn_id is not null then
+      night_status := 'played';
+      new_out := 0;
+      line := jsonb_build_object('pts', st.pts, 'reb', st.reb, 'ast', st.ast,
+                                 'stl', st.stl, 'blk', st.blk, 'tov', st.tov, 'min', st.min);
+      fp := st.fp;
+      perf := greatest(-0.14, least(0.14, 0.22 * (fp - p.expected_fp) / greatest(p.expected_fp, 5)));
+      new_last5 := (p.last5 || fp)[greatest(1, cardinality(p.last5 || fp) - 4):];
+    else
+      night_status := case when team_played then 'rest' else 'idle' end;
+      new_out := 0;
+    end if;
+
+    gap   := 0.08 * (fair_value(p) - p.price) / p.price;
+    dem   := greatest(-0.06, least(0.06, p.pending_demand * 0.0004));
+    noise := case when night_status = 'idle' then randn() * 0.003 else randn() * 0.008 end;
+    total := greatest(-0.2, least(0.2, perf + gap + dem + noise));
+
+    update players set
+      price = greatest(3, round(p.price * (1 + total), 2)),
+      out_nights = new_out,
+      last5 = new_last5,
+      pending_demand = 0,
+      last_move = jsonb_build_object(
+        'night', n, 'date', p_date, 'status', night_status, 'line', line, 'fp', fp,
+        'expected', round(p.expected_fp,1),
+        'perf', round(perf,4), 'gap', round(gap,4), 'demand', round(dem,4),
+        'demand_shares', p.pending_demand, 'noise', round(noise,4), 'total', round(total,4))
+    where ticker = p.ticker;
+
+    insert into price_history (ticker, night, price)
+      select ticker, n, price from players where ticker = p.ticker;
+  end loop;
+
+  -- Averages update *after* pricing so tonight's line is judged against the prior expectation.
+  perform refresh_player_averages();
+
+  -- One net-worth point per membership in every room still running.
+  insert into net_worth_history (room_id, user_id, night, net_worth)
+    select m.room_id, m.user_id, n, m.cash + coalesce(sum(h.shares * pl.price), 0)
+    from room_members m
+    join rooms r on r.id = m.room_id and r.finalized_at is null
+    left join holdings h on h.room_id = m.room_id and h.user_id = m.user_id
+    left join players pl on pl.ticker = h.ticker
+    group by m.room_id, m.user_id, m.cash;
+
+  -- Rooms whose end date has arrived freeze their standings at tonight's prices.
+  update room_members m set final_net_worth = m.cash + coalesce((
+      select sum(h.shares * pl.price) from holdings h join players pl on pl.ticker = h.ticker
+      where h.room_id = m.room_id and h.user_id = m.user_id), 0)
+    where m.room_id in (select id from rooms where ends_at <= p_date and finalized_at is null);
+  update rooms set finalized_at = now() where ends_at <= p_date and finalized_at is null;
+
+  return n;
+end $$;
+
+revoke all on function public.apply_real_game_night(date, text[]) from public, anon, authenticated;
+
+-- ───────────────────────── Leaderboard, per room ─────────────────────────
+-- Usernames and net worth only, never holdings. Private rooms: members only.
+-- Finalized rooms rank by the frozen final_net_worth.
+
+drop function public.leaderboard(int);
+
+create or replace function public.leaderboard(p_room uuid, p_limit int default 50)
+returns table (rank bigint, username text, net_worth numeric, is_me boolean)
+language sql stable security definer set search_path = public as $$
+  with r as (
+    select * from rooms
+    where id = p_room
+      and (is_public or exists (select 1 from room_members where room_id = p_room and user_id = auth.uid()))
+  ), w as (
+    select m.user_id, pr.username,
+           case when r.finalized_at is not null then m.final_net_worth
+                else m.cash + coalesce(sum(h.shares * pl.price), 0) end as nw
+    from r
+    join room_members m on m.room_id = r.id
+    join profiles pr on pr.id = m.user_id
+    left join holdings h on h.room_id = m.room_id and h.user_id = m.user_id
+    left join players pl on pl.ticker = h.ticker
+    group by m.user_id, pr.username, m.cash, m.final_net_worth, r.finalized_at
+  )
+  select rank() over (order by nw desc), username, round(nw, 2), coalesce(user_id = auth.uid(), false)
+  from w order by nw desc limit least(p_limit, 200)
+$$;
+
+revoke all on function public.leaderboard(uuid, int) from public;
+grant execute on function public.leaderboard(uuid, int) to anon, authenticated;
