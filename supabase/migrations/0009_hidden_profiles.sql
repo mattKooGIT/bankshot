@@ -27,3 +27,14 @@ $$;
 
 revoke all on function public.leaderboard(uuid, int) from public;
 grant execute on function public.leaderboard(uuid, int) to anon, authenticated;
+
+-- Average price per game night, for the landing page's market line (one row per night).
+create or replace function public.market_index()
+returns table (night int, avg numeric)
+language sql stable security definer set search_path = public as $$
+  select h.night, round(avg(h.price), 2) from price_history h
+  join players p on p.ticker = h.ticker and p.active
+  group by h.night order by h.night
+$$;
+revoke all on function public.market_index() from public;
+grant execute on function public.market_index() to anon, authenticated;
