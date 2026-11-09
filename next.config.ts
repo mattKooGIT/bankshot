@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  images: {
+    // ESPN player headshots
+    remotePatterns: [{ protocol: "https", hostname: "a.espncdn.com", pathname: "/i/headshots/**" }],
+  },
   turbopack: {
     rules: {
       "*.css": {
