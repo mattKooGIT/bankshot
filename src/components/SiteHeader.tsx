@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/format";
 import { getCurrentRoom, getMyRooms } from "@/lib/rooms";
 import { RoomSwitcher } from "./RoomSwitcher";
+import { LiveBadge } from "./LiveBadge";
 
 // The nav is static (prerendered); only the account area depends on cookies,
 // so it streams in inside its own Suspense boundary.
@@ -16,10 +17,12 @@ export function SiteHeader() {
         </Link>
         <div className="flex gap-4 text-white/70">
           <Link href="/market" className="hover:text-white">Market</Link>
+          <Link href="/scores" className="hover:text-white">Scores</Link>
           <Link href="/portfolio" className="hover:text-white">Portfolio</Link>
           <Link href="/leaderboard" className="hover:text-white">Leaderboard</Link>
           <Link href="/rooms" className="hover:text-white">Rooms</Link>
         </div>
+        <LiveBadge />
         <div className="ml-auto flex items-center gap-4">
           <Suspense fallback={<span className="h-5 w-32 animate-pulse rounded bg-white/5" />}>
             <AccountArea />
