@@ -11,11 +11,11 @@ import { LiveBadge } from "./LiveBadge";
 export function SiteHeader() {
   return (
     <header className="border-b border-white/10">
-      <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3 text-sm">
+      <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 text-sm">
         <Link href="/" className="font-semibold tracking-tight">
           Courtside<span className="text-emerald-400">Exchange</span>
         </Link>
-        <div className="flex gap-4 text-white/70">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-white/70">
           <Link href="/market" className="hover:text-white">Market</Link>
           <Link href="/scores" className="hover:text-white">Scores</Link>
           <Link href="/portfolio" className="hover:text-white">Portfolio</Link>
