@@ -2,6 +2,9 @@ import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 import { syncNights } from "@/lib/sync";
 
+// Catching up several nights fetches many box scores; give it the Hobby plan maximum.
+export const maxDuration = 300;
+
 // Nightly job (e.g. Vercel Cron, ~10:00 UTC). Requires `Authorization: Bearer $CRON_SECRET`.
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
