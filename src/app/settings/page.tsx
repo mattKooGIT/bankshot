@@ -43,15 +43,24 @@ async function Settings({ searchParams }: Pick<PageProps<"/settings">, "searchPa
         <p role="status" className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">{notice}</p>
       )}
       <section className={section}><UsernameForm current={profile?.username ?? ""} /></section>
-      <section className={section}><EmailForm current={user.email ?? ""} /></section>
-      <section className={section}>
-        <h2 className="text-sm text-white/70">Sign-in methods</h2>
-        <ul className="text-sm">
-          <li>Email link</li>
-          {google && <li>Google</li>}
-        </ul>
-        <p className="text-xs text-white/40">There are no passwords. You sign in with a link sent to your email{google ? " or with Google" : ""}.</p>
-      </section>
+      {user.is_anonymous ? (
+        <section className={section}>
+          <h2 className="text-sm text-white/70">Email</h2>
+          <p className="text-sm text-white/60">Demo accounts have no email.</p>
+        </section>
+      ) : (
+        <>
+          <section className={section}><EmailForm current={user.email ?? ""} /></section>
+          <section className={section}>
+            <h2 className="text-sm text-white/70">Sign-in methods</h2>
+            <ul className="text-sm">
+              <li>Email link</li>
+              {google && <li>Google</li>}
+            </ul>
+            <p className="text-xs text-white/40">There are no passwords. You sign in with a link sent to your email{google ? " or with Google" : ""}.</p>
+          </section>
+        </>
+      )}
     </div>
   );
 }

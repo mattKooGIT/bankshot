@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { DemoButton } from "@/components/DemoButton";
 
 const primary = "rounded-lg bg-emerald-500 px-6 py-3 font-semibold text-black hover:bg-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300";
 const secondary = "rounded-lg border border-white/25 px-6 py-3 font-semibold hover:border-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
@@ -19,6 +20,7 @@ export async function HeroActions() {
       ) : (
         <>
           <Link href="/login?next=/rooms" className={primary}>Start a league with friends</Link>
+          <DemoButton className={secondary} />
           <Link href="/market" className={secondary}>Go to the market</Link>
         </>
       )}

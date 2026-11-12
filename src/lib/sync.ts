@@ -181,5 +181,14 @@ export async function syncNights(until = addDays(easternToday(), -1), log = cons
     log(`${d}: applied as night ${night}${listed ? `, listed ${listed} new players` : ""}`);
     results.push({ date: d, result: "applied", night });
   }
+  // Demo guests last 24 hours. Never blocks prices.
+  const cleaned = await db.rpc("delete_stale_guests");
+  if (cleaned.error) {
+    const msg = `Warning: couldn't clean up demo guests (${cleaned.error.message}).`;
+    log(msg);
+    console.warn(msg);
+  } else if (cleaned.data) {
+    log(`Removed ${cleaned.data} expired demo guests.`);
+  }
   return results;
 }

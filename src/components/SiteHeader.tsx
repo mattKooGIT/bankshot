@@ -6,6 +6,7 @@ import { getCurrentRoom, getMyRooms } from "@/lib/rooms";
 import { RoomSwitcher } from "./RoomSwitcher";
 import { LiveBadge } from "./LiveBadge";
 import { RecapBanner } from "./RecapBanner";
+import { GuestBar } from "./GuestBar";
 import type { Recap } from "@/lib/recap";
 
 // The nav is static (prerendered); only the account area depends on cookies,
@@ -31,6 +32,9 @@ export function SiteHeader() {
           </Suspense>
         </div>
       </nav>
+      <Suspense fallback={null}>
+        <GuestBar />
+      </Suspense>
       <Suspense fallback={null}>
         <RecapSlot />
       </Suspense>
