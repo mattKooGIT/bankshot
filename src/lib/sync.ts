@@ -170,6 +170,13 @@ export async function syncNights(until = addDays(easternToday(), -1), log = cons
     }
     const night = check(applied, `apply ${d}`) as number;
     const listed = check(await db.rpc("list_rotation_players"), "list_rotation_players") as number;
+    // Room feeds get a results post for this night. Never blocks prices.
+    const posted = await db.rpc("post_night_results", { p_night: night });
+    if (posted.error) {
+      const msg = `Warning: couldn't post night ${night} results (${posted.error.message}).`;
+      log(msg);
+      console.warn(msg);
+    }
     if (listed) await refreshPlayerMeta(db);
     log(`${d}: applied as night ${night}${listed ? `, listed ${listed} new players` : ""}`);
     results.push({ date: d, result: "applied", night });
