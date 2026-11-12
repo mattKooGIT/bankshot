@@ -22,7 +22,7 @@ Bankshot is a portfolio piece. A visitor (often a recruiter) should go from the 
 | Lifetime | Guests are deleted 24 hours after they sign up, by the nightly sync. Bots and real users are never deleted. |
 | Upgrading a guest to a real account | Out of scope. |
 
-## 1. Data: migration `0012_demo_guest.sql`
+## 1. Data: migration `0013_demo_guest.sql`
 
 ### Demand guard
 - Redefine the trade function from `0006`, changing only the two `pending_demand` updates. They now apply only when the trader's profile is not `hidden`.
