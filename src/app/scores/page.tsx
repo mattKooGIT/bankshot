@@ -7,7 +7,7 @@ import { getCurrentRoom } from "@/lib/rooms";
 import { getLiveData } from "@/lib/live-server";
 import { ScoresView, type MyHolding } from "./ScoresView";
 
-export const metadata: Metadata = { title: "Scores · Courtside Exchange" };
+export const metadata: Metadata = { title: "Scores · Bankshot" };
 
 export default function ScoresPage() {
   return (

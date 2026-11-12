@@ -16,7 +16,7 @@ import { HeroActions } from "./HeroActions";
 const display = Big_Shoulders({ subsets: ["latin"], weight: ["800", "900"] });
 
 export const metadata: Metadata = {
-  title: "Courtside Exchange: the stock market, but for the NBA",
+  title: "Bankshot: the stock market, but for the NBA",
   description: "Buy and sell players with paper money. Prices move every night on real box scores. Beat your friends.",
 };
 

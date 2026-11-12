@@ -15,7 +15,7 @@ export function SiteHeader() {
     <header className="border-b border-white/10">
       <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 text-sm">
         <Link href="/" className="font-semibold tracking-tight">
-          Courtside<span className="text-emerald-400">Exchange</span>
+          Bank<span className="text-emerald-400">shot</span>
         </Link>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-white/70">
           <Link href="/market" className="hover:text-white">Market</Link>

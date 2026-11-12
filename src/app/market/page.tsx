@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getLatestNight, getMarket } from "@/lib/market";
 import { MarketTable } from "./MarketTable";
 
-export const metadata: Metadata = { title: "Market · Courtside Exchange" };
+export const metadata: Metadata = { title: "Market · Bankshot" };
 
 export default async function MarketPage() {
   const [players, latest] = await Promise.all([getMarket(), getLatestNight()]);

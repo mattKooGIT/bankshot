@@ -18,7 +18,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/players/[ticker]">): Promise<Metadata> {
   const { ticker } = await params;
-  return { title: `${ticker.toUpperCase()} · Courtside Exchange` };
+  return { title: `${ticker.toUpperCase()} · Bankshot` };
 }
 
 export default async function PlayerPage({ params }: PageProps<"/players/[ticker]">) {

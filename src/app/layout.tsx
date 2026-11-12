@@ -7,7 +7,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Courtside Exchange",
+  title: "Bankshot",
   description: "Trade NBA players like stocks. Prices move on real box scores.",
 };
 

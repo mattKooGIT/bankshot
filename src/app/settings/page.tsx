@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { EmailForm, UsernameForm } from "./SettingsForms";
 
-export const metadata: Metadata = { title: "Settings · Courtside Exchange" };
+export const metadata: Metadata = { title: "Settings · Bankshot" };
 
 export default function SettingsPage({ searchParams }: PageProps<"/settings">) {
   return (

@@ -6,7 +6,7 @@ import { getCurrentRoom } from "@/lib/rooms";
 import type { Recap } from "@/lib/recap";
 import { RecapView, type TopRow } from "@/components/RecapView";
 
-export const metadata: Metadata = { title: "Last night · Courtside Exchange" };
+export const metadata: Metadata = { title: "Last night · Bankshot" };
 
 export default function RecapPage() {
   return (

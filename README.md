@@ -1,4 +1,4 @@
-# Courtside Exchange
+# Bankshot
 
 NBA player stock exchange: players are tickers, prices move on real box scores, and
 everyone paper-trades with $10,000.

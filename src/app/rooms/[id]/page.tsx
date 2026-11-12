@@ -12,7 +12,7 @@ import { DangerZone } from "./DangerZone";
 import { Activity } from "./Activity";
 import type { FeedEvent } from "@/lib/feed";
 
-export const metadata: Metadata = { title: "Room · Courtside Exchange" };
+export const metadata: Metadata = { title: "Room · Bankshot" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

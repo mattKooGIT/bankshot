@@ -225,7 +225,7 @@ async function main() {
   await pause(p, 2200);
 
   // 6. End card
-  await p.evaluate(() => (window as unknown as { __endCard: (a: string, b: string) => void }).__endCard("Courtside Exchange", "Play free."));
+  await p.evaluate(() => (window as unknown as { __endCard: (a: string, b: string) => void }).__endCard("Bankshot", "Play free."));
   await p.evaluate(() => document.getElementById("demo-caption")?.remove());
   await pause(p, 2600);
 

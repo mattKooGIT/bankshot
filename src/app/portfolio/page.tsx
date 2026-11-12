@@ -8,7 +8,7 @@ import { getCurrentRoom } from "@/lib/rooms";
 import { addDays, easternToday } from "@/lib/dates";
 import { dayLabel, gamesWithin, getTeamsUpcoming, matchup, nextGame, tipTime } from "@/lib/schedule";
 
-export const metadata: Metadata = { title: "Portfolio · Courtside Exchange" };
+export const metadata: Metadata = { title: "Portfolio · Bankshot" };
 
 export default function PortfolioPage() {
   return (

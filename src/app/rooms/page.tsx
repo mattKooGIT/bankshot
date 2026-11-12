@@ -7,7 +7,7 @@ import { formatMoney } from "@/lib/format";
 import { getCurrentRoom, getMyRooms } from "@/lib/rooms";
 import { CreateRoomForm } from "./CreateRoomForm";
 
-export const metadata: Metadata = { title: "Rooms · Courtside Exchange" };
+export const metadata: Metadata = { title: "Rooms · Bankshot" };
 
 export default function RoomsPage() {
   return (

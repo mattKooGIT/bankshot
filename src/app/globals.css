@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Courtside is a dark, trading-terminal style app in both OS themes. */
+/* Bankshot is a dark, trading-terminal style app in both OS themes. */
 :root {
   --background: #0b0d10;
   --foreground: #e8eaed;

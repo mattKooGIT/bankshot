@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatMoney, formatPct } from "@/lib/format";
 import { getCurrentRoom, getPublicRoom, isRoomEnded } from "@/lib/rooms";
 
-export const metadata: Metadata = { title: "Leaderboard · Courtside Exchange" };
+export const metadata: Metadata = { title: "Leaderboard · Bankshot" };
 
 export default function LeaderboardPage() {
   return (

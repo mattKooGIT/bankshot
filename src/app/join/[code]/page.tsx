@@ -6,7 +6,7 @@ import { formatMoney } from "@/lib/format";
 import { getMyRooms } from "@/lib/rooms";
 import { JoinButton } from "./JoinButton";
 
-export const metadata: Metadata = { title: "Join a room · Courtside Exchange" };
+export const metadata: Metadata = { title: "Join a room · Bankshot" };
 
 export default function JoinPage({ params }: PageProps<"/join/[code]">) {
   return (
