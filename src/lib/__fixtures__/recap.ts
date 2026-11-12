@@ -22,7 +22,7 @@ export const topsFixture: Record<string, TopRow[]> = {
 };
 
 export const nightEventFixture: FeedEvent = {
-  id: "999", kind: "night", actor: null, created_at: new Date().toISOString(), reactions: { "🔥": 3, "💀": 1 }, mine: ["🔥"],
+  id: "999", kind: "night", actor: null, created_at: new Date().toISOString(), reactions: { "🔥": 3, "💀": 1 }, mine: ["🔥"], reply_count: 0, replies: [],
   payload: { night: 3, date: "2026-11-11", standings: [
     { username: "jalen_b", net_worth: 10910.55, change_pct: 0.061, rank: 1, prev_rank: 3, },
     { username: "matt", net_worth: 10432.1, change_pct: 0.042, rank: 2, prev_rank: 2 },
