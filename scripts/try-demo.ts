@@ -39,6 +39,10 @@ async function main() {
       check(await feed.getByText(text).count() > 0, `feed shows "${text}"`);
     }
     check(await page.getByText("You're in a demo account. It resets in 24 hours.").isVisible(), "guest bar is shown");
+    const standings = page.locator("section", { has: page.getByRole("heading", { name: "Standings" }) });
+    for (const bot of ["bucket_getter", "fade_master", "sixth_man"]) {
+      check(await standings.getByText(bot).count() > 0, `standings include ${bot}`);
+    }
     await page.screenshot({ path: join(OUT, "1-demo-league.png"), fullPage: true });
 
     // React with 🐐 via the ☺+ menu's search.
