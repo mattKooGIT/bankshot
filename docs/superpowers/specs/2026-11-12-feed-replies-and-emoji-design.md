@@ -7,17 +7,18 @@
 ## Goal
 
 Make the room feed more conversational:
-- **Any emoji:** react with any emoji, not just the four quick picks.
+- **Any emoji:** react with any emoji, from one emoji button that opens a full menu.
 - **Replies:** reply to any feed item in text.
 
 ## Decisions
 
 | Topic | Decision |
 |---|---|
-| Quick reactions | 🔥 😂 💀 📉 stay as one-tap chips. |
-| Other emojis | A "＋" chip opens the Frimousse picker (`frimousse@0.4.0`), with search and categories. |
+| Quick reactions | **Removed.** Posts show only the emojis people have used, plus one ☺+ button. |
+| Emoji menu | The ☺+ button opens the Frimousse picker (`frimousse@0.4.0`), with search and categories. A "Popular" row above it holds 🔥 😂 💀 📉. The menu stays open, so you can pick several emojis in a row. |
+| Repeat taps | One per person per emoji: tapping an emoji you already used removes it, the same as now. |
 | What counts as one emoji | Any single emoji grapheme, including ZWJ sequences and skin tones. Rejected: letters, digits, whitespace, more than 32 characters. Validated in the database. |
-| Reaction cap | At most 10 distinct emojis per user per event. |
+| Reaction cap | At most 50 distinct emojis per user per event. This is an anti-spam backstop that real use never reaches. |
 | Thread depth | One level. Replying to a reply attaches to the top-level item and prefills "@username ". |
 | Reply rules | Same as comments: 1–280 characters. Comments and replies share the 5-per-60-seconds budget. Replies are permanent. |
 | Reactions on replies | Allowed. |
@@ -44,7 +45,7 @@ Tests pin which inputs pass and fail; the exact SQL is the implementer's choice.
 
 ### `toggle_reaction(p_event, p_emoji)`
 - The emoji check becomes `is_single_emoji(p_emoji)`. The error stays "Not a supported emoji."
-- Adding a reaction when the caller already has 10 distinct emojis on that event raises "That's enough reactions for one post."
+- Adding a reaction when the caller already has 50 distinct emojis on that event raises "That's enough reactions for one post."
 
 ### `post_reply(p_event bigint, p_text text) returns bigint`
 - Security definer.
@@ -72,36 +73,35 @@ Its rate-limit count also includes replies.
 ## 2. UI (`Activity.tsx`)
 
 Each event row shows:
-- the four quick chips
-- a "＋" chip
-- any other emojis that have been used, with counts. The viewer's own reactions are highlighted.
+- a chip for each emoji anyone has used, with its count. The viewer's own reactions are highlighted, and tapping a chip toggles the viewer's reaction.
+- a ☺+ button. It's present even when nobody has reacted yet.
 
-**"＋" chip:** opens a Frimousse popover with search. Picking an emoji toggles it and closes the popover. The popover closes on Escape or an outside click, and the chip is keyboard-reachable.
+**☺+ button:** opens a popover with the "Popular" row (🔥 😂 💀 📉) above a Frimousse picker with search. Picking an emoji toggles it and leaves the popover open; emojis the viewer has already used are highlighted in the Popular row. The popover closes on Escape or an outside click, and the chip is keyboard-reachable.
 
 **"Reply" link:** on every top-level event and every reply. It opens an inline text box under the thread. When replying to a reply, the box is prefilled with "@username ".
 
 **Replies:**
-- Shown indented under the event, each with the author, text, relative time, and reaction chips. Reply rows have no "＋".
+- Shown indented under the event, each with the author, text, relative time, and reaction chips. Reply rows get the same chips and ☺+ button.
 - "View all N replies" appears when there are more than 3, and loads `event_replies`.
 - Errors show under the reply box, in the same style as comment errors.
 - After posting, the thread refreshes. The 30-second polling still applies.
 
 **Server actions** in `feed-actions.ts`: `postReply(eventId, text)` and `loadReplies(eventId)`.
 
-**Formatting:** `feed.ts` gains `sortReactions(reactions, quick)`. It orders the quick picks first, then the other emojis by count, highest first, with ties broken by emoji. It's unit-tested.
+**Formatting:** `feed.ts` gains `sortReactions(reactions)`. It orders emojis by count, highest first, with ties broken by emoji. It's unit-tested.
 
 ## 3. Demo (with `2026-11-12-demo-guest-design.md`)
 
 `seed_demo` also adds:
 - a reply from `sixth_man` to the "fade_master you're cooked" comment: "@fade_master check the standings first"
-- reactions spread across events, including 🐐 and 🧊, which aren't quick picks
+- reactions spread across events, including 🐐 and 🧊
 
 ## 4. Testing
 
 ### Database (PGlite), written first
 - **`is_single_emoji` accepts:** 🔥, 🐐, 👍🏽, 👨‍👩‍👧, 🇺🇸, ❤️, #️⃣
 - **`is_single_emoji` rejects:** '', 'lol', 'a', '🔥🔥', '🔥a', ' 🔥', '😂😂😂', '!'
-- **Reaction cap:** the 11th distinct emoji raises the cap error.
+- **Reaction cap:** the 51st distinct emoji raises the cap error.
 - **Replies attach to the top-level event:** a reply to a reply has the top-level event as its `parent_id`.
 - **Rate limit:** 3 comments then 2 replies within 60 seconds is fine; the 6th raises the limit error.
 - **Non-members** can't reply, and get 0 rows from `event_replies`.
