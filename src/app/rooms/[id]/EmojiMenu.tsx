@@ -13,7 +13,7 @@ function Row({ children, ...props }: EmojiPickerListRowProps) {
 }
 function Emoji({ emoji, ...props }: EmojiPickerListEmojiProps) {
   return (
-    <button {...props} className={`flex size-8 items-center justify-center rounded-md text-lg ${emoji.isActive ? "bg-white/10" : ""}`}>
+    <button {...props} aria-label={emoji.label} className={`flex size-8 items-center justify-center rounded-md text-lg ${emoji.isActive ? "bg-white/10" : ""}`}>
       {emoji.emoji}
     </button>
   );

@@ -160,3 +160,33 @@ test("seed_demo and delete_stale_guests are service-role only", async () => {
   await assert.rejects(db.q(`select delete_stale_guests()`), /permission denied/);
   await asRole(db, null);
 });
+
+test("hidden accounts are visible inside private rooms (standings, recap, results posts) but not in Public", async () => {
+  const db = await demoWorld();
+  const room = await seed(db);
+  await actAs(db, G);
+  const board = await db.q(`select username from leaderboard($1)`, [room]);
+  assert.equal(board.length, 4, "the Demo League standings list the guest and all 3 bots");
+  const [{ r }] = await db.q(`select my_recap($1) r`, [room]);
+  const league = (r.rooms as { room_id: string; size: number }[]).find((x) => x.room_id === room)!;
+  assert.equal(Number(league.size), 4, "recap ranks the guest among all 4 members");
+
+  await actAs(db, null);
+  await db.q(`delete from room_events where room_id = $1 and kind = 'night'`, [room]);
+  assert.equal((await db.q(`select post_night_results(3) n`))[0].n, 1);
+  const [{ payload }] = await db.q(`select payload from room_events where room_id = $1 and kind = 'night'`, [room]);
+  assert.equal(payload.standings.length, 4, "the nightly results post includes hidden members");
+
+  await actAs(db, A);
+  const pub = (await db.q(`select username from leaderboard(public_room_id())`)).map((x) => x.username);
+  assert.ok(!pub.some((u: string) => u.startsWith("guest_") || u === "bucket_getter"), "Public still hides them");
+});
+
+test("seed_demo refuses new guests when 100 were created in the last hour", async () => {
+  const db = await demoWorld();
+  await db.q(`insert into auth.users (id, is_anonymous, created_at)
+              select gen_random_uuid(), true, now() - interval '30 minutes' from generate_series(1, 100)`);
+  await assert.rejects(seed(db), /The demo is busy right now\. Try again in a few minutes\./);
+  await db.q(`update auth.users set created_at = now() - interval '2 hours' where is_anonymous and id <> $1`, [G]);
+  assert.ok(await seed(db), "older guests don't count");
+});

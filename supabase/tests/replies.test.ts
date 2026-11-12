@@ -92,3 +92,15 @@ test("deleting a parent event or the room removes replies and their reactions", 
   assert.equal((await db.q(`select 1 from room_events`)).length, 0);
   assert.equal((await db.q(`select 1 from room_event_reactions`)).length, 0);
 });
+
+test("is_single_emoji rejects invisible, spacing, bidi, punctuation, private-use and padded emoji", async () => {
+  const { db } = await feedWorld();
+  const bad = ["​", " ", " ", "‮", "⁦", "—", "…", "₿", "─",
+    String.fromCodePoint(0xF0000), String.fromCodePoint(0x10FFFF), "🔥‍🔥‍🔥‍🔥‍🔥", "🔥🏻🏻🏻"];
+  for (const e of bad) {
+    assert.equal((await db.q(`select is_single_emoji($1) ok`, [e]))[0].ok, false, `reject U+${e.codePointAt(0)!.toString(16)} ${JSON.stringify(e)}`);
+  }
+  for (const e of ["‼️", "⁉️", "™️", "➡️", "⭐", "▶️", "⌚", "👩‍❤️‍💋‍👨", "👨‍👩‍👧‍👦", "🫠"]) {
+    assert.equal((await db.q(`select is_single_emoji($1) ok`, [e]))[0].ok, true, `accept ${e}`);
+  }
+});

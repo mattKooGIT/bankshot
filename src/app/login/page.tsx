@@ -4,8 +4,6 @@ import { createClient, postLoginPath } from "@/lib/supabase/server";
 import { LoginForm } from "./LoginForm";
 import { DemoButton } from "@/components/DemoButton";
 
-const ERRORS: Record<string, string> = { demo: "The demo couldn't start. Try again in a minute." };
-
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <main className="mx-auto max-w-sm px-4 py-16">
@@ -21,7 +19,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 async function LoginContent({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   const sp = await searchParams;
   const next = postLoginPath(typeof sp.next === "string" ? sp.next : undefined);
-  const error = typeof sp.error === "string" ? (ERRORS[sp.error] ?? sp.error) : undefined;
+  const error = typeof sp.error === "string" ? sp.error : undefined;
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
