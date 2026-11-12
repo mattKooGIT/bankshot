@@ -57,7 +57,7 @@ test("toggle_reaction: on, off, on; members only; valid emoji only", async () =>
   const [{ id }] = await db.q(`select post_comment($1, 'lol') id`, [room]);
   const t = async () => (await db.q(`select toggle_reaction($1, '😂') is_on`, [id]))[0].is_on;
   assert.deepEqual([await t(), await t(), await t()], [true, false, true]);
-  await assert.rejects(db.q(`select toggle_reaction($1, '👍')`, [id]), /emoji/i);
+  await assert.rejects(db.q(`select toggle_reaction($1, 'lol')`, [id]), /emoji/i);
   await actAs(db, C);
   await assert.rejects(db.q(`select toggle_reaction($1, '🔥')`, [id]), /You are not in this room\./);
 });
