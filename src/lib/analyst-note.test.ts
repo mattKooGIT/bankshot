@@ -261,3 +261,15 @@ test("Wording: nothing produced says buy, sell or hold", () => {
   assert.ok(produced.length > 10, "the other tests produced text");
   for (const p of produced) assert.doesNotMatch(p, /\b(buy|sell|hold)\b/i, p);
 });
+
+test("Sidelined stays first even against a split over +1000%", () => {
+  const games: Day[] = [];
+  for (let i = 0; i < 2; i++) games.push({ date: day(i), mins: { h: [5, 1], c: [30, 40] } });
+  for (let i = 2; i < 5; i++) games.push({ date: day(i), mins: { h: [20, 15] } });
+  const note = run({
+    player: { ...HART, out_nights: 1, injury_note: "Out: ankle" },
+    teammates: [CHET], games: season({ team: "OKC", games }), prices: [],
+  })!;
+  assert.equal(note.tag, "Sidelined");
+  assert.match(note.paragraphs[1], /\+1400%/);
+});

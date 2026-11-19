@@ -130,7 +130,9 @@ export function analystNote(input: NoteInput): Note | null {
   }
 
   if (signals.length === 0) return null;
-  const shown = signals.sort((a, b) => b.strength - a.strength).slice(0, MAX_SIGNALS);
+  // Sidelined is always first (spec: strength 1000), even against a split above +1000%.
+  const rank = (s: Signal) => (s.tag === "Sidelined" ? Infinity : s.strength);
+  const shown = signals.sort((a, b) => rank(b) - rank(a)).slice(0, MAX_SIGNALS);
 
   // Market line: once, on the first shown signal it applies to.
   const change = priceChange(prices);
