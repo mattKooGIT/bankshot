@@ -3,16 +3,14 @@
 import { cookies } from "next/headers";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { PUBLIC_ROOM_ID, ROOM_COOKIE } from "@/lib/rooms";
+import { PUBLIC_ROOM_ID, ROOM_COOKIE, ROOM_COOKIE_OPTIONS } from "@/lib/rooms";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "@/lib/forms";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function setRoomCookie(roomId: string) {
-  (await cookies()).set(ROOM_COOKIE, roomId, {
-    httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365,
-  });
+  (await cookies()).set(ROOM_COOKIE, roomId, ROOM_COOKIE_OPTIONS);
 }
 
 /** Switch the room you're trading in. Membership is re-checked on every read (getCurrentRoom). */

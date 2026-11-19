@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { eventText, rankMove, relativeTime, type FeedEvent } from "./feed";
+import { eventText, rankMove, relativeTime, type FeedEvent, sortReactions } from "./feed";
 
 const now = new Date("2026-11-10T12:00:00Z");
 test("relativeTime", () => {
@@ -11,7 +11,7 @@ test("relativeTime", () => {
 });
 
 const ev = (kind: FeedEvent["kind"], payload: Record<string, unknown>): FeedEvent =>
-  ({ id: "1", kind, actor: "matt", payload, created_at: "", reactions: {}, mine: [] });
+  ({ id: "1", kind, actor: "matt", payload, created_at: "", reactions: {}, mine: [], reply_count: 0, replies: [] });
 test("eventText for each kind", () => {
   assert.equal(eventText(ev("trade", { side: "buy", ticker: "SGA", shares: 40, price: 55.24 })), "bought 40 SGA at $55.24");
   assert.equal(eventText(ev("trade", { side: "sell", ticker: "SGA", shares: 1, price: 60 })), "sold 1 SGA at $60.00");
@@ -26,4 +26,10 @@ test("rankMove", () => {
   assert.equal(rankMove(3, 2), "▼1");
   assert.equal(rankMove(2, 2), "–");
   assert.equal(rankMove(2, null), "–");
+});
+
+test("sortReactions: most used first, ties in a stable emoji order", () => {
+  assert.deepEqual(sortReactions({ "🐐": 1, "🔥": 3, "😂": 3 }), [["🔥", 3], ["😂", 3], ["🐐", 1]]);
+  assert.deepEqual(sortReactions({}), []);
+  assert.deepEqual(sortReactions({ "🧊": 0, "🐐": 2 }), [["🐐", 2]]);
 });

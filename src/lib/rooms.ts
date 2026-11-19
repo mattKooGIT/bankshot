@@ -5,6 +5,7 @@ import { easternToday } from "@/lib/dates";
 
 export const PUBLIC_ROOM_ID = "00000000-0000-4000-8000-000000000001";
 export const ROOM_COOKIE = "room";
+export const ROOM_COOKIE_OPTIONS = { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 } as const;
 
 export type Room = {
   id: string;

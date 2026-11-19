@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient, postLoginPath } from "@/lib/supabase/server";
 import { LoginForm } from "./LoginForm";
+import { DemoButton } from "@/components/DemoButton";
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
@@ -24,5 +25,13 @@ async function LoginContent({ searchParams }: Pick<PageProps<"/login">, "searchP
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect(next); // already signed in
 
-  return <LoginForm next={next} error={error} />;
+  return (
+    <>
+      <LoginForm next={next} error={error} />
+      <div className="mt-8 border-t border-white/10 pt-6">
+        <p className="mb-3 text-sm text-white/60">Just looking around?</p>
+        <DemoButton className="w-full rounded-lg border border-white/20 px-4 py-2.5 font-medium hover:border-white/50" />
+      </div>
+    </>
+  );
 }

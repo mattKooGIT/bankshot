@@ -10,7 +10,7 @@ import { switchRoom } from "../actions";
 import { InviteLink, RemoveMemberButton } from "./OwnerControls";
 import { DangerZone } from "./DangerZone";
 import { Activity } from "./Activity";
-import type { FeedEvent } from "@/lib/feed";
+import { normalizeFeed, type FeedEvent } from "@/lib/feed";
 
 export const metadata: Metadata = { title: "Room · Bankshot" };
 
@@ -45,7 +45,7 @@ async function RoomView({ params }: Pick<PageProps<"/rooms/[id]">, "params">) {
     isOwner ? supabase.rpc("room_invite", { p_room: id }) : Promise.resolve({ data: null }),
     supabase.rpc("room_feed", { p_room: id, p_before: null, p_limit: 30 }),
   ]);
-  const initialFeed = ((feed ?? []) as FeedEvent[]).map((e) => ({ ...e, id: String(e.id) }));
+  const initialFeed = normalizeFeed((feed ?? []) as FeedEvent[]);
   const rows = (board ?? []) as Row[];
   const members = (roster ?? []) as Member[];
   const final = room.finalized_at !== null;
