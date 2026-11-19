@@ -11,6 +11,7 @@ import { PriceChart } from "@/components/PriceChart";
 import { TradePanel } from "./TradePanel";
 import { LiveLine } from "./LiveLine";
 import { Schedule } from "./Schedule";
+import { AnalystNote } from "./AnalystNote";
 
 export async function generateStaticParams() {
   return (await getMarket()).map((p) => ({ ticker: p.ticker }));
@@ -65,6 +66,10 @@ export default async function PlayerPage({ params }: PageProps<"/players/[ticker
           <LiveLine espnId={player.espn_id} team={player.team} expectedFp={player.expected_fp} />
 
           <InjuryReport note={player.injury_note} espnId={player.espn_id} night={latest} />
+
+          <Suspense fallback={null}>
+            <AnalystNote player={player} />
+          </Suspense>
 
           <PriceChart points={history} title={`${player.ticker} price by game night`} />
 

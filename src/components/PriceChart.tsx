@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { formatMoney } from "@/lib/format";
+import { niceTicks, tickLabel } from "@/lib/chart-ticks";
 
 // Single-series price line. Validated against the dark surface (#0b0d10):
 // OKLCH lightness in band, >= 3:1 contrast.
@@ -9,16 +10,6 @@ const LINE = "#4f8ff7";
 const W = 640, H = 220, PAD = { t: 12, r: 16, b: 24, l: 52 };
 
 type Point = { night: number; price: number };
-
-function niceTicks(min: number, max: number, count = 4) {
-  const span = max - min || 1;
-  const step = 10 ** Math.floor(Math.log10(span / count));
-  const nice = [1, 2, 2.5, 5, 10].map((m) => m * step).find((s) => span / s <= count) ?? step * 10;
-  const start = Math.floor(min / nice) * nice;
-  const ticks: number[] = [];
-  for (let v = start; v <= max + nice * 0.001; v += nice) ticks.push(Number(v.toFixed(2)));
-  return ticks;
-}
 
 export function PriceChart({ points, title }: { points: Point[]; title: string }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -57,7 +48,7 @@ export function PriceChart({ points, title }: { points: Point[]; title: string }
             <g key={t}>
               <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.06)" />
               <text x={PAD.l - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-white/40 text-[11px]">
-                ${t.toFixed(t < 10 ? 2 : 0)}
+                {tickLabel(t)}
               </text>
             </g>
           ))}
